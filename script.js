@@ -225,8 +225,24 @@ function getBackgroundVolumeBaseFromConfig() {
 
 function syncBackgroundVolumeFromConfig() {
   const base = getBackgroundVolumeBaseFromConfig();
-  const factor = isMissionBackgroundMobileReduction() ? 0.48 : 1;
+  const factor = isMissionBackgroundMobileReduction() ? 0.32 : 1;
   BACKGROUND_VOLUME = Math.min(1, base * factor);
+  backgroundAudio.volume = BACKGROUND_VOLUME;
+}
+
+/** While narration plays, pull mission BGM down so voice is intelligible (especially on phones). */
+function duckBackgroundForNarration() {
+  if (backgroundAudio.paused) {
+    return;
+  }
+  if (isMissionBackgroundMobileReduction()) {
+    backgroundAudio.volume = Math.min(BACKGROUND_VOLUME * 0.2, 0.04);
+  } else {
+    backgroundAudio.volume = Math.min(BACKGROUND_VOLUME * 0.42, 0.1);
+  }
+}
+
+function restoreBackgroundAfterNarration() {
   backgroundAudio.volume = BACKGROUND_VOLUME;
 }
 
@@ -653,9 +669,19 @@ function initVoices() {
 }
 
 function speakMessage(text) {
+  duckBackgroundForNarration();
   if (narrationAudio.currentSrc || narrationAudio.src) {
     playAudioFile(narrationAudio, 1).then((played) => {
-      if (!played && "speechSynthesis" in window) {
+      if (played) {
+        narrationAudio.addEventListener("ended", () => restoreBackgroundAfterNarration(), { once: true });
+        narrationAudio.addEventListener(
+          "error",
+          () => {
+            restoreBackgroundAfterNarration();
+          },
+          { once: true }
+        );
+      } else if ("speechSynthesis" in window) {
         safeStopSpeech();
         const utterance = new SpeechSynthesisUtterance(text.replace(/\n/g, " "));
         const selected = getPreferredVoice();
@@ -665,13 +691,19 @@ function speakMessage(text) {
         utterance.rate = 0.84;
         utterance.pitch = 0.9;
         utterance.volume = 1;
+        utterance.onend = () => {
+          restoreBackgroundAfterNarration();
+        };
         speechUtterance = utterance;
         window.speechSynthesis.speak(utterance);
+      } else {
+        restoreBackgroundAfterNarration();
       }
     });
     return;
   }
   if (!("speechSynthesis" in window)) {
+    restoreBackgroundAfterNarration();
     return;
   }
   safeStopSpeech();
@@ -683,6 +715,9 @@ function speakMessage(text) {
   utterance.rate = 0.84;
   utterance.pitch = 0.9;
   utterance.volume = 1;
+  utterance.onend = () => {
+    restoreBackgroundAfterNarration();
+  };
   speechUtterance = utterance;
   window.speechSynthesis.speak(utterance);
 }
