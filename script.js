@@ -7,6 +7,7 @@ const authBtnEl = document.getElementById("authBtn");
 const authStatusEl = document.getElementById("authStatus");
 const authProgressEl = document.getElementById("authProgress");
 const authProgressFillEl = document.getElementById("authProgressFill");
+const soundUnlockBtnEl = document.getElementById("soundUnlockBtn");
 const profileScreenEl = document.getElementById("profileScreen");
 const profileCardEl = document.getElementById("profileCard");
 const profilePhotoEl = document.getElementById("profilePhoto");
@@ -54,16 +55,28 @@ let missionAbortRequested = false;
 let audioUnlocked = false;
 let currentProfileSlug = "default";
 const preloadedImageRefs = [];
-let startupAutoplayFallbackBound = false;
 
 const destructionAudio = new Audio("./assets/distruction.mp3");
 const backgroundAudio = new Audio("./assets/background.mp3");
 const celebrationMusicAudio = new Audio("./assets/happy-birthday.mp3");
-const startupAudio = new Audio("./assets/startup.mp3");
+
+function createStartupAudioFallback() {
+  const a = new Audio("./assets/startup.mp3");
+  a.preload = "auto";
+  a.loop = true;
+  return a;
+}
+
+const startupAudio = document.getElementById("startupAudio") ?? createStartupAudioFallback();
 let config = {};
 const narrationAudio = new Audio("./assets/narration/narration-default.mp3");
 let BACKGROUND_VOLUME = 0.4;
 let STARTUP_VOLUME = 0.38;
+/** Lowest volume during auth→profile transition = STARTUP_VOLUME × this (0–1). Higher = shallower dip (e.g. 0.45 is subtle). */
+const STARTUP_DIP_MIN_RATIO = 0.35;
+const STARTUP_DIP_STEPS = 5;
+const STARTUP_DIP_STEP_MS = 30;
+const STARTUP_DIP_HOLD_MS = 55;
 let MESSAGE_START_DELAY_MS = 4000;
 let MESSAGE_LIFETIME = 12;
 let COUNTDOWN_BEEP_FROM = 10;
@@ -120,15 +133,76 @@ function getRequestedProfileSlug() {
   return /^[a-z0-9-]+$/.test(raw) ? raw : "default";
 }
 
+/**
+ * Mirrors profiles/default.json — used when fetch() fails (e.g. opening index.html via file://).
+ * Browsers block loading local JSON with fetch from file URLs; use a local HTTP server for full profiles.
+ */
+const EMBEDDED_PROFILE_DEFAULT = {
+  recipientName: "Akshay Chikhalkar",
+  agentName: "Akshay",
+  recipientDob: "15-11-1995",
+  profilePhoto: "./assets/profile/profile-default.jpg",
+  clearanceLevel: "OMEGA-7",
+  agentStatus: "ACTIVE",
+  agentAddress: "UNKNOWN // SAFEHOUSE REDACTED",
+  lastSeen: "Near cake storage, 22:14 IST",
+  speciality: "SOCIAL OPS / JOY ENGINEERING",
+  favoriteIntel: "Double chocolate, low evidence",
+  greeting: "Good evening",
+  introLine: "Your next assignment has been delivered with full birthday-level priority.",
+  yearLinePrefix: "As of this moment, you are officially entering Year",
+  objectivesHeading: "Mission objectives:",
+  objectives: [
+    "Celebrate without hesitation.",
+    "Accept cake, compliments, and unreasonable happiness.",
+    "Upgrade confidence, joy, and legendary energy."
+  ],
+  acceptanceLine: "If you choose to accept this mission, your {ageOrdinal} year will be your boldest one yet.",
+  selfDestructLineTemplate: "This message will self-destruct in {seconds} seconds.",
+  countdownSeconds: 12,
+  countdownBeepFromSeconds: 10,
+  messageStartDelayMs: 2500,
+  narrationFile: "./assets/narration/narration-default.mp3",
+  narrationVoice: "en-US-ChristopherNeural",
+  narrationRate: "-5%",
+  backgroundVolume: 0.4,
+  celebrationMusicVolume: 0.45,
+  celebrationCheerVolume: 0.8,
+  closingLine: "Good luck, Agent."
+};
+
+function cloneEmbeddedDefaultProfile() {
+  return JSON.parse(JSON.stringify(EMBEDDED_PROFILE_DEFAULT));
+}
+
 async function fetchProfileConfig(slug) {
   const profilePath = `./profiles/${slug}.json`;
   const fallbackPath = "./profiles/default.json";
-  const response = await fetch(profilePath, { cache: "no-store" }).catch(() => null);
-  if (response && response.ok) {
-    return response.json();
+
+  try {
+    const response = await fetch(profilePath, { cache: "no-store" });
+    if (response.ok) {
+      return response.json();
+    }
+  } catch {
+    // file://, CORS, or offline
   }
-  const fallbackResponse = await fetch(fallbackPath, { cache: "no-store" });
-  return fallbackResponse.json();
+
+  try {
+    const fallbackResponse = await fetch(fallbackPath, { cache: "no-store" });
+    if (fallbackResponse.ok) {
+      return fallbackResponse.json();
+    }
+  } catch {
+    // file:// cannot load sibling JSON
+  }
+
+  if (slug !== "default") {
+    console.warn(
+      `[birthday_wish] Could not load profiles/${slug}.json (try opening via a local server). Using embedded default profile.`
+    );
+  }
+  return cloneEmbeddedDefaultProfile();
 }
 
 function applyRuntimeConfig() {
@@ -340,24 +414,60 @@ function showProfileScreen() {
 
 function tryStartStartupMusic() {
   startupAudio.volume = STARTUP_VOLUME;
+  startupAudio.muted = false;
   const playPromise = startupAudio.play();
-  if (playPromise && typeof playPromise.catch === "function") {
-    playPromise.catch(() => {});
+  if (playPromise && typeof playPromise.then === "function") {
+    playPromise
+      .then(() => {
+        soundUnlockBtnEl?.classList.add("hidden");
+      })
+      .catch(() => {});
   }
 }
 
-function bindStartupMusicAutoplayFallback() {
-  if (startupAutoplayFallbackBound) {
+/** Browsers often block the first audible play() until a gesture; used only by ENABLE SOUND. */
+function ensureStartupAudibleFromUserGesture() {
+  if (isAuthenticated) {
     return;
   }
-  startupAutoplayFallbackBound = true;
-  const onFirstInteraction = () => {
-    if (startupAudio.paused && !isAuthenticated) {
-      tryStartStartupMusic();
+  startupAudio.muted = false;
+  startupAudio.volume = STARTUP_VOLUME;
+  const playPromise = startupAudio.play();
+  if (playPromise && typeof playPromise.catch === "function") {
+    playPromise
+      .then(() => {
+        soundUnlockBtnEl?.classList.add("hidden");
+      })
+      .catch(() => {});
+  }
+}
+
+/** Re-tries give http(s) loads + Media Engagement the best chance to start without a click. */
+function scheduleStartupAutoplayRetries() {
+  const delays = [0, 15, 50, 100, 200, 400, 800, 1200, 2000, 3000];
+  for (const ms of delays) {
+    setTimeout(() => {
+      if (isAuthenticated) {
+        return;
+      }
+      if (startupAudio.paused) {
+        tryStartStartupMusic();
+      }
+    }, ms);
+  }
+}
+
+function scheduleSoundUnlockHint() {
+  soundUnlockBtnEl?.classList.add("hidden");
+  setTimeout(() => {
+    if (isAuthenticated || !soundUnlockBtnEl) {
+      return;
     }
-  };
-  authScreenEl.addEventListener("pointerdown", onFirstInteraction, { once: true });
-  authScreenEl.addEventListener("keydown", onFirstInteraction, { once: true });
+    if (!startupAudio.paused) {
+      return;
+    }
+    soundUnlockBtnEl.classList.remove("hidden");
+  }, 2200);
 }
 
 /** Volume dip between auth and profile — same track, continuous playback. */
@@ -366,16 +476,16 @@ async function startupAuthToProfileTransition() {
     return;
   }
   const base = startupAudio.volume || STARTUP_VOLUME;
-  const low = base * 0.06;
-  const steps = 5;
+  const low = base * STARTUP_DIP_MIN_RATIO;
+  const steps = STARTUP_DIP_STEPS;
   for (let i = 0; i < steps; i += 1) {
     startupAudio.volume = base - ((base - low) * (i + 1)) / steps;
-    await wait(30);
+    await wait(STARTUP_DIP_STEP_MS);
   }
-  await wait(55);
+  await wait(STARTUP_DIP_HOLD_MS);
   for (let i = 0; i < steps; i += 1) {
     startupAudio.volume = low + ((base - low) * (i + 1)) / steps;
-    await wait(30);
+    await wait(STARTUP_DIP_STEP_MS);
   }
   startupAudio.volume = base;
 }
@@ -420,8 +530,11 @@ async function runAuthSequence() {
   authBtnEl.disabled = true;
   authPasswordInputEl.disabled = true;
   authPasswordInputEl.blur();
+  soundUnlockBtnEl?.classList.add("hidden");
   await unlockAudioIfNeeded();
-  tryStartStartupMusic();
+  if (startupAudio.paused) {
+    tryStartStartupMusic();
+  }
   authStatusEl.classList.remove("error");
   authStatusEl.classList.add("loading");
   authStatusEl.textContent = "VERIFYING CREDENTIALS...";
@@ -579,7 +692,9 @@ async function unlockAudioIfNeeded() {
       await audioCtx.resume().catch(() => {});
     }
   }
-  const unlockTargets = [destructionAudio, backgroundAudio, celebrationMusicAudio, startupAudio, narrationAudio];
+  // Do not include startupAudio: the unlock helper pauses + resets currentTime, which would restart
+  // the auth→profile startup bed. Startup is already playing before Authenticate or is started below.
+  const unlockTargets = [destructionAudio, backgroundAudio, celebrationMusicAudio, narrationAudio];
   await Promise.all(
     unlockTargets.map(async (audioEl) => {
       try {
@@ -937,6 +1052,12 @@ authPasswordInputEl.addEventListener("keydown", (event) => {
     runAuthSequence();
   }
 });
+if (soundUnlockBtnEl) {
+  soundUnlockBtnEl.addEventListener("click", () => {
+    ensureStartupAudibleFromUserGesture();
+    soundUnlockBtnEl.classList.add("hidden");
+  });
+}
 initVoices();
 if ("speechSynthesis" in window) {
   window.speechSynthesis.onvoiceschanged = initVoices;
@@ -946,6 +1067,16 @@ document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
     safeStopSpeech();
     stopMediaAudio();
+  } else if (!isAuthenticated) {
+    tryStartStartupMusic();
+  }
+});
+
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) {
+    tryStartStartupMusic();
+    scheduleStartupAutoplayRetries();
+    scheduleSoundUnlockHint();
   }
 });
 
@@ -967,8 +1098,18 @@ async function bootApp() {
   authStatusEl.classList.remove("error");
   authStatusEl.textContent = "AWAITING CREDENTIALS...";
   preloadAuthPageAssets();
+  startupAudio.addEventListener(
+    "canplaythrough",
+    () => {
+      if (!isAuthenticated && startupAudio.paused) {
+        tryStartStartupMusic();
+      }
+    },
+    { once: true }
+  );
   tryStartStartupMusic();
-  bindStartupMusicAutoplayFallback();
+  scheduleStartupAutoplayRetries();
+  scheduleSoundUnlockHint();
 }
 
 bootApp().catch(() => {

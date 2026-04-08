@@ -16,6 +16,16 @@
     <div class="scanlines" aria-hidden="true"></div>
     <div class="noise" aria-hidden="true"></div>
     <canvas id="smokeCanvas" aria-hidden="true"></canvas>
+    <!-- Startup bed: autoplay + playsinline maximize chances of starting on load (http/https). -->
+    <audio
+      id="startupAudio"
+      class="startup-audio"
+      src="./assets/startup.mp3"
+      preload="auto"
+      loop
+      playsinline
+      autoplay
+    ></audio>
 
     <section class="auth-screen" id="authScreen">
       <div class="auth-card">
@@ -30,6 +40,9 @@
           <span id="authProgressFill"></span>
         </div>
         <p class="auth-status" id="authStatus">AWAITING CREDENTIALS...</p>
+        <button type="button" id="soundUnlockBtn" class="sound-unlock-btn hidden" aria-label="Enable mission music">
+          ENABLE SOUND
+        </button>
       </div>
     </section>
     <section class="profile-screen hidden" id="profileScreen">
