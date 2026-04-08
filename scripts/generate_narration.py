@@ -1,5 +1,5 @@
+import json
 import pathlib
-import re
 import sys
 
 try:
@@ -10,39 +10,27 @@ except ImportError:
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-METADATA_PATH = ROOT / "metadata.js"
-OUTPUT_PATH = ROOT / "assets" / "narration.mp3"
+PROFILES_DIR = ROOT / "profiles"
 
 
-def read_metadata() -> str:
-    return METADATA_PATH.read_text(encoding="utf-8")
+def parse_string_value(profile: dict, key: str, default: str) -> str:
+    value = profile.get(key, default)
+    return str(value).strip() if value is not None else default
 
 
-def parse_string_value(source: str, key: str, default: str) -> str:
-    pattern = re.compile(rf"{re.escape(key)}\s*:\s*\"([^\"]*)\"")
-    match = pattern.search(source)
-    return match.group(1) if match else default
-
-
-def require_string_value(source: str, key: str) -> str:
-    value = parse_string_value(source, key, "").strip()
+def require_string_value(profile: dict, key: str) -> str:
+    value = parse_string_value(profile, key, "")
     if not value:
-        raise ValueError(f"Missing required metadata string: {key}")
+        raise ValueError(f"Missing required profile string: {key}")
     return value
 
 
-def parse_objectives(source: str) -> list[str]:
-    match = re.search(r"objectives\s*:\s*\[(.*?)\]", source, flags=re.S)
-    if not match:
-        return []
-    raw = match.group(1)
-    return re.findall(r"\"([^\"]+)\"", raw)
-
-
-def parse_int_value(source: str, key: str, default: int) -> int:
-    pattern = re.compile(rf"{re.escape(key)}\s*:\s*(\d+)")
-    match = pattern.search(source)
-    return int(match.group(1)) if match else default
+def parse_int_value(profile: dict, key: str, default: int) -> int:
+    raw = profile.get(key, default)
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return default
 
 
 def parse_age(dob: str) -> int:
@@ -82,26 +70,26 @@ def format_ordinal(value: int) -> str:
     return f"{num}th"
 
 
-def build_message(source: str) -> str:
-    recipient = require_string_value(source, "recipientName")
-    agent = parse_string_value(source, "agentName", recipient).strip() or recipient
-    greeting = require_string_value(source, "greeting")
-    intro = require_string_value(source, "introLine")
-    year_prefix = require_string_value(source, "yearLinePrefix")
-    objectives_heading = require_string_value(source, "objectivesHeading")
-    acceptance = require_string_value(source, "acceptanceLine")
-    self_destruct_template = require_string_value(source, "selfDestructLineTemplate")
-    closing = require_string_value(source, "closingLine")
-    dob = require_string_value(source, "recipientDob")
+def build_message(profile: dict) -> str:
+    recipient = require_string_value(profile, "recipientName")
+    agent = parse_string_value(profile, "agentName", recipient) or recipient
+    greeting = require_string_value(profile, "greeting")
+    intro = require_string_value(profile, "introLine")
+    year_prefix = require_string_value(profile, "yearLinePrefix")
+    objectives_heading = require_string_value(profile, "objectivesHeading")
+    acceptance = require_string_value(profile, "acceptanceLine")
+    self_destruct_template = require_string_value(profile, "selfDestructLineTemplate")
+    closing = require_string_value(profile, "closingLine")
+    dob = require_string_value(profile, "recipientDob")
     age = parse_age(dob)
     entering_year = age + 1
     entering_year_ordinal = format_ordinal(entering_year)
-    countdown = parse_int_value(source, "countdownSeconds", 0)
+    countdown = parse_int_value(profile, "countdownSeconds", 0)
     if countdown <= 0:
-        raise ValueError("Missing or invalid metadata int: countdownSeconds")
-    objectives = parse_objectives(source)
-    if not objectives:
-        raise ValueError("Missing required metadata array: objectives")
+        raise ValueError("Missing or invalid profile int: countdownSeconds")
+    objectives = profile.get("objectives")
+    if not isinstance(objectives, list) or not objectives:
+        raise ValueError("Missing required profile array: objectives")
     self_destruct_line = self_destruct_template.replace("{seconds}", str(countdown))
 
     lines = [
@@ -117,21 +105,39 @@ def build_message(source: str) -> str:
     return " ".join(lines)
 
 
-async def generate_mp3(text: str, voice: str, rate: str):
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+async def generate_mp3(text: str, voice: str, rate: str, output_path: pathlib.Path):
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     communicator = edge_tts.Communicate(text=text, voice=voice, rate=rate)
-    await communicator.save(str(OUTPUT_PATH))
+    await communicator.save(str(output_path))
+
+
+def get_output_path(profile: dict) -> pathlib.Path:
+    narration_file = parse_string_value(profile, "narrationFile", "./assets/narration.mp3")
+    relative_path = narration_file[2:] if narration_file.startswith("./") else narration_file
+    return ROOT / relative_path
+
+
+def load_profiles() -> list[tuple[pathlib.Path, dict]]:
+    profile_files = sorted(PROFILES_DIR.glob("*.json"))
+    if not profile_files:
+        raise ValueError("No profile JSON files found in profiles/")
+    items = []
+    for profile_path in profile_files:
+        profile = json.loads(profile_path.read_text(encoding="utf-8"))
+        items.append((profile_path, profile))
+    return items
 
 
 def main():
-    source = read_metadata()
-    text = build_message(source)
-    voice = parse_string_value(source, "narrationVoice", "en-US-ChristopherNeural")
-    rate = parse_string_value(source, "narrationRate", "-5%")
     import asyncio
 
-    asyncio.run(generate_mp3(text, voice=voice, rate=rate))
-    print(f"Narration generated: {OUTPUT_PATH}")
+    for profile_path, profile in load_profiles():
+        text = build_message(profile)
+        voice = parse_string_value(profile, "narrationVoice", "en-US-ChristopherNeural")
+        rate = parse_string_value(profile, "narrationRate", "-5%")
+        output_path = get_output_path(profile)
+        asyncio.run(generate_mp3(text, voice=voice, rate=rate, output_path=output_path))
+        print(f"Narration generated from {profile_path.name}: {output_path}")
 
 
 if __name__ == "__main__":

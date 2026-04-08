@@ -34,6 +34,8 @@ const celebrationTitleEl = document.getElementById("celebrationTitle");
 const celebrationSubtextEl = document.getElementById("celebrationSubtext");
 const confettiCanvas = document.getElementById("confettiCanvas");
 const confettiCtx = confettiCanvas ? confettiCanvas.getContext("2d") : null;
+authBtnEl.disabled = true;
+authPasswordInputEl.disabled = true;
 
 const smokeCanvas = document.getElementById("smokeCanvas");
 const ctx = smokeCanvas.getContext("2d");
@@ -54,13 +56,13 @@ let audioUnlocked = false;
 const destructionAudio = new Audio("./assets/distruction.mp3");
 const backgroundAudio = new Audio("./assets/background.mp3");
 const celebrationMusicAudio = new Audio("./assets/happy-birthday.mp3");
-const config = window.MISSION_METADATA || {};
-const narrationAudio = new Audio(config.narrationFile || "./assets/narration.mp3");
-const BACKGROUND_VOLUME = Number(config.backgroundVolume) || 0.4;
-const MESSAGE_START_DELAY_MS = Number(config.messageStartDelayMs) || 4000;
-const MESSAGE_LIFETIME = Number(config.countdownSeconds) || 12;
-const COUNTDOWN_BEEP_FROM = Number(config.countdownBeepFromSeconds) || 10;
-const CELEBRATION_MUSIC_VOLUME = Number(config.celebrationMusicVolume) || 0.45;
+let config = {};
+const narrationAudio = new Audio("./assets/narration.mp3");
+let BACKGROUND_VOLUME = 0.4;
+let MESSAGE_START_DELAY_MS = 4000;
+let MESSAGE_LIFETIME = 12;
+let COUNTDOWN_BEEP_FROM = 10;
+let CELEBRATION_MUSIC_VOLUME = 0.45;
 destructionAudio.preload = "auto";
 backgroundAudio.preload = "auto";
 celebrationMusicAudio.preload = "auto";
@@ -89,6 +91,54 @@ function resizeCanvas() {
 }
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
+
+function getRequestedProfileSlug() {
+  const querySlug = new URLSearchParams(window.location.search).get("p");
+  const pathSlug = window.location.pathname.split("/").filter(Boolean)[0];
+  const raw = (querySlug || pathSlug || "default").trim().toLowerCase();
+  return /^[a-z0-9-]+$/.test(raw) ? raw : "default";
+}
+
+async function fetchProfileConfig(slug) {
+  const profilePath = `./profiles/${slug}.json`;
+  const fallbackPath = "./profiles/default.json";
+  const response = await fetch(profilePath, { cache: "no-store" }).catch(() => null);
+  if (response && response.ok) {
+    return response.json();
+  }
+  const fallbackResponse = await fetch(fallbackPath, { cache: "no-store" });
+  return fallbackResponse.json();
+}
+
+function applyRuntimeConfig() {
+  BACKGROUND_VOLUME = Number(config.backgroundVolume) || 0.4;
+  MESSAGE_START_DELAY_MS = Number(config.messageStartDelayMs) || 4000;
+  MESSAGE_LIFETIME = Number(config.countdownSeconds) || 12;
+  COUNTDOWN_BEEP_FROM = Number(config.countdownBeepFromSeconds) || 10;
+  CELEBRATION_MUSIC_VOLUME = Number(config.celebrationMusicVolume) || 0.45;
+
+  const narrationFile = String(config.narrationFile || "./assets/narration.mp3");
+  if (narrationAudio.src !== new URL(narrationFile, window.location.href).href) {
+    narrationAudio.src = narrationFile;
+  }
+
+  backgroundAudio.loop = true;
+  backgroundAudio.volume = BACKGROUND_VOLUME;
+  backgroundAudio.muted = false;
+  celebrationMusicAudio.loop = true;
+  celebrationMusicAudio.volume = CELEBRATION_MUSIC_VOLUME;
+  narrationAudio.loop = false;
+  narrationAudio.volume = 1;
+  destructionAudio.preload = "auto";
+  backgroundAudio.preload = "auto";
+  celebrationMusicAudio.preload = "auto";
+  narrationAudio.preload = "auto";
+
+  destructionAudio.load();
+  backgroundAudio.load();
+  celebrationMusicAudio.load();
+  narrationAudio.load();
+}
 
 function buildMessage(name, age, agentAlias) {
   const enteringYear = Number(age) + 1;
@@ -800,17 +850,32 @@ if ("speechSynthesis" in window) {
   window.speechSynthesis.onvoiceschanged = initVoices;
 }
 
-if (config.recipientName) {
-  nameInput.value = String(config.recipientName);
-}
-ageInput.value = String(getRecipientAge());
-const initialAgentName = config.agentName || config.recipientName || "AGENT";
-agentNameEl.textContent = String(initialAgentName).toUpperCase();
-authAgentInputEl.value = String(initialAgentName);
-
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
     safeStopSpeech();
     stopMediaAudio();
   }
+});
+
+async function bootApp() {
+  const requestedSlug = getRequestedProfileSlug();
+  config = await fetchProfileConfig(requestedSlug);
+  applyRuntimeConfig();
+
+  if (config.recipientName) {
+    nameInput.value = String(config.recipientName);
+  }
+  ageInput.value = String(getRecipientAge());
+  const initialAgentName = config.agentName || config.recipientName || "AGENT";
+  agentNameEl.textContent = String(initialAgentName).toUpperCase();
+  authAgentInputEl.value = String(initialAgentName);
+  authPasswordInputEl.disabled = false;
+  authBtnEl.disabled = false;
+  authStatusEl.classList.remove("error");
+  authStatusEl.textContent = "AWAITING CREDENTIALS...";
+}
+
+bootApp().catch(() => {
+  authStatusEl.classList.add("error");
+  authStatusEl.textContent = "PROFILE LOAD FAILED. TRY AGAIN.";
 });
