@@ -24,6 +24,13 @@ def parse_string_value(source: str, key: str, default: str) -> str:
     return match.group(1) if match else default
 
 
+def require_string_value(source: str, key: str) -> str:
+    value = parse_string_value(source, key, "").strip()
+    if not value:
+        raise ValueError(f"Missing required metadata string: {key}")
+    return value
+
+
 def parse_objectives(source: str) -> list[str]:
     match = re.search(r"objectives\s*:\s*\[(.*?)\]", source, flags=re.S)
     if not match:
@@ -61,47 +68,39 @@ def parse_age(dob: str) -> int:
 
 
 def build_message(source: str) -> str:
-    recipient = parse_string_value(source, "recipientName", "Agent")
-    agent = parse_string_value(source, "agentName", recipient)
-    greeting = parse_string_value(source, "greeting", "Good evening")
-    intro = parse_string_value(
-        source,
-        "introLine",
-        "Your next assignment has been delivered with full birthday-level priority.",
-    )
-    year_prefix = parse_string_value(
-        source, "yearLinePrefix", "As of this moment, you are officially entering Year"
-    )
-    acceptance = parse_string_value(
-        source,
-        "acceptanceLine",
-        "If you choose to accept this mission, your {age}th year will be your boldest one yet.",
-    )
-    closing = parse_string_value(source, "closingLine", "Good luck, Agent.")
-    dob = parse_string_value(source, "recipientDob", "")
+    recipient = require_string_value(source, "recipientName")
+    agent = parse_string_value(source, "agentName", recipient).strip() or recipient
+    greeting = require_string_value(source, "greeting")
+    intro = require_string_value(source, "introLine")
+    year_prefix = require_string_value(source, "yearLinePrefix")
+    objectives_heading = require_string_value(source, "objectivesHeading")
+    acceptance = require_string_value(source, "acceptanceLine")
+    self_destruct_template = require_string_value(source, "selfDestructLineTemplate")
+    closing = require_string_value(source, "closingLine")
+    dob = require_string_value(source, "recipientDob")
     age = parse_age(dob)
-    countdown = parse_int_value(source, "countdownSeconds", 12)
-    objectives = parse_objectives(source) or [
-        "Celebrate without hesitation.",
-        "Accept cake, compliments, and unreasonable happiness.",
-        "Upgrade confidence, joy, and legendary energy.",
-    ]
+    countdown = parse_int_value(source, "countdownSeconds", 0)
+    if countdown <= 0:
+        raise ValueError("Missing or invalid metadata int: countdownSeconds")
+    objectives = parse_objectives(source)
+    if not objectives:
+        raise ValueError("Missing required metadata array: objectives")
+    self_destruct_line = self_destruct_template.replace("{seconds}", str(countdown))
 
     lines = [
         f"{greeting}, Agent {agent}.",
         intro,
         f"{year_prefix} {age}.",
-        "Mission objectives:",
+        objectives_heading,
         *objectives,
         acceptance.replace("{age}", str(age)),
-        f"This message will self-destruct in {countdown} seconds.",
+        self_destruct_line,
         closing,
-        f"Happy Birthday, {recipient}!",
     ]
     return " ".join(lines)
 
 
-async def generate_mp3(text: str, voice: str = "en-US-ChristopherNeural", rate: str = "-5%"):
+async def generate_mp3(text: str, voice: str, rate: str):
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     communicator = edge_tts.Communicate(text=text, voice=voice, rate=rate)
     await communicator.save(str(OUTPUT_PATH))
@@ -110,9 +109,11 @@ async def generate_mp3(text: str, voice: str = "en-US-ChristopherNeural", rate: 
 def main():
     source = read_metadata()
     text = build_message(source)
+    voice = parse_string_value(source, "narrationVoice", "en-US-ChristopherNeural")
+    rate = parse_string_value(source, "narrationRate", "-5%")
     import asyncio
 
-    asyncio.run(generate_mp3(text))
+    asyncio.run(generate_mp3(text, voice=voice, rate=rate))
     print(f"Narration generated: {OUTPUT_PATH}")
 
 

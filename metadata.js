@@ -12,6 +12,7 @@ window.MISSION_METADATA = {
   greeting: "Good evening",
   introLine: "Your next assignment has been delivered with full birthday-level priority.",
   yearLinePrefix: "As of this moment, you are officially entering Year",
+  objectivesHeading: "Mission objectives:",
   objectives: [
     "Celebrate without hesitation.",
     "Accept cake, compliments, and unreasonable happiness.",
@@ -19,10 +20,13 @@ window.MISSION_METADATA = {
   ],
   acceptanceLine:
     "If you choose to accept this mission, your {age}th year will be your boldest one yet.",
+  selfDestructLineTemplate: "This message will self-destruct in {seconds} seconds.",
   countdownSeconds: 12,
   countdownBeepFromSeconds: 10,
   messageStartDelayMs: 2500,
   narrationFile: "./assets/narration.mp3",
+  narrationVoice: "en-US-ChristopherNeural",
+  narrationRate: "-5%",
   celebrationMusicVolume: 0.45,
   celebrationCheerVolume: 0.8,
   closingLine: "Good luck, Agent."

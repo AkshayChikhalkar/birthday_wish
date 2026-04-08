@@ -96,6 +96,7 @@ function buildMessage(name, age, agentAlias) {
     config.introLine ||
     "Your next assignment has been delivered with full birthday-level priority.";
   const yearLinePrefix = config.yearLinePrefix || "As of this moment, you are officially entering Year";
+  const objectivesHeading = config.objectivesHeading || "Mission objectives:";
   const objectives =
     Array.isArray(config.objectives) && config.objectives.length
       ? config.objectives
@@ -108,6 +109,9 @@ function buildMessage(name, age, agentAlias) {
     config.acceptanceLine ||
     "If you choose to accept this mission, your {age}th year will be your boldest one yet.";
   const acceptanceLine = acceptanceTemplate.replace("{age}", String(age));
+  const selfDestructLineTemplate =
+    config.selfDestructLineTemplate || "This message will self-destruct in {seconds} seconds.";
+  const selfDestructLine = selfDestructLineTemplate.replace("{seconds}", String(MESSAGE_LIFETIME));
   const closingLine = config.closingLine || "Good luck, Agent.";
 
   return [
@@ -116,18 +120,18 @@ function buildMessage(name, age, agentAlias) {
     introLine,
     `${yearLinePrefix} ${age}.`,
     "",
-    "Mission objectives:",
+    objectivesHeading,
     ...objectives.map((objective) => `- ${objective}`),
     "",
     acceptanceLine,
     "",
-    `This message will self-destruct in ${MESSAGE_LIFETIME} seconds.`,
+    selfDestructLine,
     "",
     closingLine
   ].join("\n");
 }
 
-async function typeText(text, speed = 56) {
+async function typeText(text, speed = 60) {
   missionTextEl.textContent = "";
   missionTextEl.scrollTop = 0;
   for (let i = 0; i < text.length; i += 1) {
