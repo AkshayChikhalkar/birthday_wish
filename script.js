@@ -53,6 +53,7 @@ let isAuthenticated = false;
 let missionAbortRequested = false;
 let audioUnlocked = false;
 let currentProfileSlug = "default";
+const preloadedImageRefs = [];
 
 const destructionAudio = new Audio("./assets/distruction.mp3");
 const backgroundAudio = new Audio("./assets/background.mp3");
@@ -81,6 +82,18 @@ destructionAudio.load();
 backgroundAudio.load();
 celebrationMusicAudio.load();
 narrationAudio.load();
+
+function preloadAuthPageAssets() {
+  const profilePhotoPath = String(
+    config.profilePhoto || `./assets/profile/profile-${currentProfileSlug}.jpg`
+  );
+  const fallbackPhotoPath = "./assets/profile/profile-default.jpg";
+  for (const src of [profilePhotoPath, fallbackPhotoPath]) {
+    const img = new Image();
+    img.src = src;
+    preloadedImageRefs.push(img);
+  }
+}
 
 function resizeCanvas() {
   smokeCanvas.width = window.innerWidth;
@@ -879,6 +892,7 @@ async function bootApp() {
   authBtnEl.disabled = false;
   authStatusEl.classList.remove("error");
   authStatusEl.textContent = "AWAITING CREDENTIALS...";
+  preloadAuthPageAssets();
 }
 
 bootApp().catch(() => {
