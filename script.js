@@ -517,10 +517,19 @@ function setupCelebrationMessage() {
   celebrationSubtextEl.textContent = `Welcome to your amazing ${formatOrdinal(enteringYear)} year. Celebrate big and enjoy every moment.`;
 }
 
-function spawnConfetti(count = 220) {
+function getConfettiCount() {
+  const configured = Number(config.confettiCount);
+  if (configured > 0) {
+    return configured;
+  }
+  const isMobileLike = window.matchMedia("(max-width: 768px)").matches;
+  return isMobileLike ? 140 : 220;
+}
+
+function spawnConfetti(count = getConfettiCount(), fillViewport = true) {
   confettiPieces = Array.from({ length: count }, () => ({
     x: Math.random() * confettiCanvas.width,
-    y: -20 - Math.random() * confettiCanvas.height,
+    y: fillViewport ? Math.random() * confettiCanvas.height : -20 - Math.random() * confettiCanvas.height,
     vx: -1.2 + Math.random() * 2.4,
     vy: 2.1 + Math.random() * 3.3,
     size: 4 + Math.random() * 8,
@@ -559,6 +568,13 @@ function showCelebrationScreen() {
   missionAbortRequested = true;
   safeStopSpeech();
   stopMediaAudio();
+  // Stop expensive smoke updates before starting celebration particles.
+  particles = [];
+  if (animationHandle) {
+    cancelAnimationFrame(animationHandle);
+    animationHandle = null;
+  }
+  ctx.clearRect(0, 0, smokeCanvas.width, smokeCanvas.height);
   if (countdownTimer) {
     clearInterval(countdownTimer);
     countdownTimer = null;
@@ -567,7 +583,7 @@ function showCelebrationScreen() {
   celebrationScreenEl.classList.add("visible");
   setupCelebrationMessage();
   if (confettiCanvas && !confettiAnimationHandle) {
-    spawnConfetti();
+    spawnConfetti(getConfettiCount(), true);
     animateConfetti();
   }
   startCelebrationAudio();
