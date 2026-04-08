@@ -859,6 +859,39 @@ hr {
   }
 }
 
+.site-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9;
+  margin: 0;
+  padding: 10px 16px 14px;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: rgba(127, 213, 167, 0.5);
+  background: linear-gradient(to top, rgba(5, 9, 14, 0.92) 0%, rgba(5, 9, 14, 0.4) 55%, transparent 100%);
+  pointer-events: none;
+}
+
+.site-footer p {
+  margin: 0;
+}
+
+.site-footer a {
+  color: var(--text-dim);
+  text-decoration: none;
+  pointer-events: auto;
+  border-bottom: 1px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.site-footer a:hover {
+  color: var(--text);
+  border-bottom-color: rgba(127, 213, 167, 0.35);
+}
+
 @media (max-width: 640px) {
   .controls {
     grid-template-columns: 1fr;
@@ -883,5 +916,10 @@ hr {
 
   .profile-card {
     width: 100%;
+  }
+
+  .site-footer {
+    padding: 8px 12px 12px;
+    font-size: 10px;
   }
 }
