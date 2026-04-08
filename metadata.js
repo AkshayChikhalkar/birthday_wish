@@ -1,7 +1,7 @@
 window.MISSION_METADATA = {
-  recipientName: "Sarah Troll",
-  agentName: "Trolli",
-  recipientDob: "12-04-2000",
+  recipientName: "Samiksha Gharad",
+  agentName: "Sami",
+  recipientDob: "06-04-1995",
   profilePhoto: "./assets/profile.jpg",
   clearanceLevel: "OMEGA-7",
   agentStatus: "ACTIVE",
