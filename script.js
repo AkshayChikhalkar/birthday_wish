@@ -56,6 +56,8 @@ let currentProfileSlug = "default";
 const preloadedImageRefs = [];
 /** When true, inline HTML retry kicks + deferred retries must not call play() (avoids double audio during auth). */
 let startupAutoplayRetryIds = [];
+/** Clears document-level listeners for “tap anywhere to start” startup audio. */
+let removeStartupInteractionListeners = null;
 
 const destructionAudio = new Audio("./assets/distruction.mp3");
 const backgroundAudio = new Audio("./assets/background.mp3");
@@ -71,7 +73,7 @@ function createStartupAudioFallback() {
 const startupAudio = document.getElementById("startupAudio") ?? createStartupAudioFallback();
 let config = {};
 const narrationAudio = new Audio("./assets/narration/narration-default.mp3");
-let BACKGROUND_VOLUME = 0.3;
+let BACKGROUND_VOLUME = 0.24;
 let STARTUP_VOLUME = 0.38;
 /** Lowest volume during auth→profile transition = STARTUP_VOLUME × this (0–1). Higher = shallower dip (e.g. 0.45 is subtle). */
 const STARTUP_DIP_MIN_RATIO = 0.35;
@@ -125,7 +127,10 @@ function resizeCanvas() {
   }
 }
 resizeCanvas();
-window.addEventListener("resize", resizeCanvas);
+window.addEventListener("resize", () => {
+  resizeCanvas();
+  syncBackgroundVolumeFromConfig();
+});
 
 function getRequestedProfileSlug() {
   const querySlug = new URLSearchParams(window.location.search).get("p");
@@ -166,7 +171,7 @@ const EMBEDDED_PROFILE_DEFAULT = {
   narrationFile: "./assets/narration/narration-default.mp3",
   narrationVoice: "en-US-ChristopherNeural",
   narrationRate: "-5%",
-  backgroundVolume: 0.4,
+  backgroundVolume: 0.24,
   celebrationMusicVolume: 0.45,
   celebrationCheerVolume: 0.8,
   closingLine: "Good luck, Agent."
@@ -206,8 +211,26 @@ async function fetchProfileConfig(slug) {
   return cloneEmbeddedDefaultProfile();
 }
 
+/** Mission BGM reads loud on small speakers; scale down on narrow viewports / coarse pointer. */
+function isMissionBackgroundMobileReduction() {
+  return (
+    window.matchMedia("(max-width: 768px)").matches || window.matchMedia("(pointer: coarse)").matches
+  );
+}
+
+function getBackgroundVolumeBaseFromConfig() {
+  const n = Number(config.backgroundVolume);
+  return Number.isFinite(n) && n >= 0 ? n : 0.24;
+}
+
+function syncBackgroundVolumeFromConfig() {
+  const base = getBackgroundVolumeBaseFromConfig();
+  const factor = isMissionBackgroundMobileReduction() ? 0.48 : 1;
+  BACKGROUND_VOLUME = Math.min(1, base * factor);
+  backgroundAudio.volume = BACKGROUND_VOLUME;
+}
+
 function applyRuntimeConfig() {
-  BACKGROUND_VOLUME = Number(config.backgroundVolume) || 0.4;
   MESSAGE_START_DELAY_MS = Number(config.messageStartDelayMs) || 4000;
   MESSAGE_LIFETIME = Number(config.countdownSeconds) || 12;
   COUNTDOWN_BEEP_FROM = Number(config.countdownBeepFromSeconds) || 10;
@@ -221,7 +244,7 @@ function applyRuntimeConfig() {
   }
 
   backgroundAudio.loop = true;
-  backgroundAudio.volume = BACKGROUND_VOLUME;
+  syncBackgroundVolumeFromConfig();
   backgroundAudio.muted = false;
   celebrationMusicAudio.loop = true;
   celebrationMusicAudio.volume = CELEBRATION_MUSIC_VOLUME;
@@ -414,7 +437,7 @@ function showProfileScreen() {
 }
 
 /**
- * Startup music: we call play() from HTML (inline), here, retries, load, and rAF.
+ * Startup music: we call play() from HTML (inline), here, retries, load, rAF, and first tap anywhere.
  * Browsers may still block audible autoplay until the user has engaged with this origin
  * (Media Engagement) or allowed sound for the site — there is no JS bypass for that.
  */
@@ -422,12 +445,43 @@ function tryStartStartupMusic() {
   startupAudio.volume = STARTUP_VOLUME;
   startupAudio.muted = false;
   if (!startupAudio.paused) {
-    return;
+    removeStartupInteractionListeners?.();
+    return Promise.resolve();
   }
   const playPromise = startupAudio.play();
   if (playPromise && typeof playPromise.then === "function") {
-    playPromise.catch(() => {});
+    playPromise
+      .then(() => {
+        removeStartupInteractionListeners?.();
+      })
+      .catch(() => {});
+    return playPromise;
   }
+  removeStartupInteractionListeners?.();
+  return Promise.resolve();
+}
+
+function bindStartupMusicOnFirstPageInteraction() {
+  removeStartupInteractionListeners?.();
+  let lastStartupGestureMs = 0;
+  const onInteraction = () => {
+    const t = Date.now();
+    if (t - lastStartupGestureMs < 320) {
+      return;
+    }
+    lastStartupGestureMs = t;
+    if (isAuthenticated || window.__BW_SUPPRESS_STARTUP_KICKS) {
+      return;
+    }
+    tryStartStartupMusic();
+  };
+  document.addEventListener("pointerdown", onInteraction, true);
+  document.addEventListener("touchstart", onInteraction, true);
+  removeStartupInteractionListeners = () => {
+    document.removeEventListener("pointerdown", onInteraction, true);
+    document.removeEventListener("touchstart", onInteraction, true);
+    removeStartupInteractionListeners = null;
+  };
 }
 
 function clearStartupAutoplayRetries() {
@@ -441,6 +495,7 @@ function clearStartupAutoplayRetries() {
 function suppressStartupAutoplayKicks() {
   window.__BW_SUPPRESS_STARTUP_KICKS = true;
   clearStartupAutoplayRetries();
+  removeStartupInteractionListeners?.();
 }
 
 /** Re-tries after boot: slow networks + engagement can allow play() to succeed without a tap. */
@@ -1059,6 +1114,7 @@ document.addEventListener("visibilitychange", () => {
 window.addEventListener("pageshow", (event) => {
   if (event.persisted) {
     window.__BW_SUPPRESS_STARTUP_KICKS = false;
+    bindStartupMusicOnFirstPageInteraction();
     tryStartStartupMusic();
     scheduleStartupAutoplayRetries();
   }
@@ -1089,6 +1145,7 @@ async function bootApp() {
   authStatusEl.classList.remove("error");
   authStatusEl.textContent = "AWAITING CREDENTIALS...";
   preloadAuthPageAssets();
+  bindStartupMusicOnFirstPageInteraction();
   startupAudio.addEventListener(
     "canplaythrough",
     () => {
