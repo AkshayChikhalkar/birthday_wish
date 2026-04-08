@@ -1,0 +1,713 @@
+const missionTextEl = document.getElementById("missionText");
+const replayBtn = document.getElementById("replayBtn");
+const authScreenEl = document.getElementById("authScreen");
+const authAgentInputEl = document.getElementById("authAgentInput");
+const authPasswordInputEl = document.getElementById("authPasswordInput");
+const authBtnEl = document.getElementById("authBtn");
+const authStatusEl = document.getElementById("authStatus");
+const authProgressEl = document.getElementById("authProgress");
+const authProgressFillEl = document.getElementById("authProgressFill");
+const profileScreenEl = document.getElementById("profileScreen");
+const profileCardEl = document.getElementById("profileCard");
+const profilePhotoEl = document.getElementById("profilePhoto");
+const profileAgentAliasEl = document.getElementById("profileAgentAlias");
+const profileNameEl = document.getElementById("profileName");
+const profileDobEl = document.getElementById("profileDob");
+const profileAgeEl = document.getElementById("profileAge");
+const profileAddressEl = document.getElementById("profileAddress");
+const profileLastSeenEl = document.getElementById("profileLastSeen");
+const profileSpecialityEl = document.getElementById("profileSpeciality");
+const profileClearanceEl = document.getElementById("profileClearance");
+const profileStatusEl = document.getElementById("profileStatus");
+const profileFavoriteIntelEl = document.getElementById("profileFavoriteIntel");
+const profileClassifiedLevelEl = document.getElementById("profileClassifiedLevel");
+const profileContinueBtnEl = document.getElementById("profileContinueBtn");
+const nameInput = document.getElementById("nameInput");
+const ageInput = document.getElementById("ageInput");
+const countdownEl = document.getElementById("countdown");
+const finalTextEl = document.getElementById("finalText");
+const terminal = document.getElementById("terminal");
+const agentNameEl = document.getElementById("agentName");
+const appEl = document.querySelector(".app");
+const celebrationScreenEl = document.getElementById("celebrationScreen");
+const celebrationTitleEl = document.getElementById("celebrationTitle");
+const celebrationSubtextEl = document.getElementById("celebrationSubtext");
+const confettiCanvas = document.getElementById("confettiCanvas");
+const confettiCtx = confettiCanvas ? confettiCanvas.getContext("2d") : null;
+
+const smokeCanvas = document.getElementById("smokeCanvas");
+const ctx = smokeCanvas.getContext("2d");
+let particles = [];
+let animationHandle = null;
+let countdownTimer = null;
+let isRunning = false;
+let voiceReady = false;
+let speechUtterance = null;
+let confettiPieces = [];
+let confettiAnimationHandle = null;
+let celebrationPopHandle = null;
+let destructSoundStarted = false;
+let isAuthenticated = false;
+let missionAbortRequested = false;
+
+const destructionAudio = new Audio("./assets/distruction.mp3");
+const backgroundAudio = new Audio("./assets/background.mp3");
+const celebrationMusicAudio = new Audio("./assets/happy-birthday.mp3");
+const config = window.MISSION_METADATA || {};
+const BACKGROUND_VOLUME = Number(config.backgroundVolume) || 0.4;
+const MESSAGE_START_DELAY_MS = Number(config.messageStartDelayMs) || 4000;
+const MESSAGE_LIFETIME = Number(config.countdownSeconds) || 12;
+const COUNTDOWN_BEEP_FROM = Number(config.countdownBeepFromSeconds) || 10;
+const CELEBRATION_MUSIC_VOLUME = Number(config.celebrationMusicVolume) || 0.45;
+destructionAudio.preload = "auto";
+backgroundAudio.preload = "auto";
+celebrationMusicAudio.preload = "auto";
+backgroundAudio.loop = true;
+backgroundAudio.volume = BACKGROUND_VOLUME;
+backgroundAudio.muted = false;
+celebrationMusicAudio.loop = true;
+celebrationMusicAudio.volume = CELEBRATION_MUSIC_VOLUME;
+
+// Proactively load audio buffers to reduce first-play latency.
+destructionAudio.load();
+backgroundAudio.load();
+celebrationMusicAudio.load();
+
+function resizeCanvas() {
+  smokeCanvas.width = window.innerWidth;
+  smokeCanvas.height = window.innerHeight;
+  if (confettiCanvas) {
+    confettiCanvas.width = window.innerWidth;
+    confettiCanvas.height = window.innerHeight;
+  }
+}
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
+function buildMessage(name, age, agentAlias) {
+  const greeting = config.greeting || "Good evening";
+  const introLine =
+    config.introLine ||
+    "Your next assignment has been delivered with full birthday-level priority.";
+  const yearLinePrefix = config.yearLinePrefix || "As of this moment, you are officially entering Year";
+  const objectives =
+    Array.isArray(config.objectives) && config.objectives.length
+      ? config.objectives
+      : [
+          "Celebrate without hesitation.",
+          "Accept cake, compliments, and unreasonable happiness.",
+          "Upgrade confidence, joy, and legendary energy."
+        ];
+  const acceptanceTemplate =
+    config.acceptanceLine ||
+    "If you choose to accept this mission, your {age}th year will be your boldest one yet.";
+  const acceptanceLine = acceptanceTemplate.replace("{age}", String(age));
+  const closingLine = config.closingLine || "Good luck, Agent.";
+
+  return [
+    `${greeting}, Agent ${agentAlias}.`,
+    "",
+    introLine,
+    `${yearLinePrefix} ${age}.`,
+    "",
+    "Mission objectives:",
+    ...objectives.map((objective) => `- ${objective}`),
+    "",
+    acceptanceLine,
+    "",
+    `This message will self-destruct in ${MESSAGE_LIFETIME} seconds.`,
+    "",
+    closingLine
+  ].join("\n");
+}
+
+async function typeText(text, speed = 56) {
+  missionTextEl.textContent = "";
+  missionTextEl.scrollTop = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    if (missionAbortRequested) {
+      return;
+    }
+    missionTextEl.textContent += text[i];
+    // Keep latest decoded line visible while typing.
+    missionTextEl.scrollTop = missionTextEl.scrollHeight;
+    // Add slight jitter to mimic terminal decoding effect.
+    await wait(speed + Math.random() * 20);
+  }
+}
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function calculateAgeFromDob(dobValue) {
+  const dobRaw = String(dobValue || "").trim();
+  if (!dobRaw) {
+    return null;
+  }
+
+  const parts = dobRaw.split(/[./-]/).map((part) => Number(part));
+  if (parts.length !== 3 || parts.some((part) => Number.isNaN(part))) {
+    return null;
+  }
+
+  let day;
+  let month;
+  let year;
+
+  // Supports DD-MM-YYYY and YYYY-MM-DD formats.
+  if (parts[0] > 999) {
+    [year, month, day] = parts;
+  } else {
+    [day, month, year] = parts;
+  }
+
+  if (!year || month < 1 || month > 12 || day < 1 || day > 31) {
+    return null;
+  }
+
+  const today = new Date();
+  let age = today.getFullYear() - year;
+  const birthdayPassed =
+    today.getMonth() + 1 > month ||
+    (today.getMonth() + 1 === month && today.getDate() >= day);
+
+  if (!birthdayPassed) {
+    age -= 1;
+  }
+
+  return age >= 0 ? age : null;
+}
+
+function getRecipientAge() {
+  return calculateAgeFromDob(config.recipientDob || config.dob) || 27;
+}
+
+function getExpectedPassword() {
+  const configuredAge = getRecipientAge();
+  return `iam${Math.max(configuredAge, 0)}`;
+}
+
+function setupProfileData() {
+  const alias = String(config.agentName || config.recipientName || "Unknown");
+  const name = String(config.recipientName || alias);
+  const age = String(getRecipientAge());
+  const dob = String(config.recipientDob || config.dob || "CLASSIFIED");
+  const clearance = String(config.clearanceLevel || "OMEGA-7");
+  const status = String(config.agentStatus || "ACTIVE");
+  const address = String(config.agentAddress || "UNKNOWN // SAFEHOUSE REDACTED");
+  const lastSeen = String(config.lastSeen || "UNKNOWN // TRACKING OFFLINE");
+  const speciality = String(config.speciality || "SOCIAL OPS / JOY ENGINEERING");
+  const favoriteIntel = String(config.favoriteIntel || "CAKE ACQUISITION");
+  const photoPath = String(config.profilePhoto || "./assets/IMG_5981_2.JPG");
+
+  profileAgentAliasEl.textContent = alias;
+  profileNameEl.textContent = name;
+  profileDobEl.textContent = dob;
+  profileAgeEl.textContent = age;
+  profileAddressEl.textContent = address;
+  profileLastSeenEl.textContent = lastSeen;
+  profileSpecialityEl.textContent = speciality;
+  profileClearanceEl.textContent = clearance;
+  profileStatusEl.textContent = status;
+  profileFavoriteIntelEl.textContent = favoriteIntel;
+  profileClassifiedLevelEl.textContent = clearance;
+  profilePhotoEl.src = photoPath;
+}
+
+function showProfileScreen() {
+  setupProfileData();
+  profileCardEl.classList.remove("booting");
+  // Restart one-time sweep when profile becomes visible.
+  void profileCardEl.offsetWidth;
+  profileCardEl.classList.add("booting");
+  profileScreenEl.classList.remove("hidden");
+}
+
+function openMissionTerminal() {
+  profileScreenEl.classList.add("hidden");
+  appEl.classList.remove("pre-auth");
+  runMission();
+}
+
+async function runAuthSequence() {
+  if (isAuthenticated) {
+    return;
+  }
+  const typedPassword = authPasswordInputEl.value.trim().toLowerCase();
+  const expectedPassword = getExpectedPassword();
+
+  if (typedPassword !== expectedPassword) {
+    authStatusEl.classList.remove("loading");
+    authStatusEl.classList.add("error");
+    authStatusEl.textContent = "ACCESS DENIED. INVALID PASSWORD.";
+    authProgressEl.classList.remove("visible");
+    authProgressFillEl.style.width = "0%";
+    authPasswordInputEl.value = "";
+    return;
+  }
+
+  authBtnEl.disabled = true;
+  authPasswordInputEl.disabled = true;
+  authStatusEl.classList.remove("error");
+  authStatusEl.classList.add("loading");
+  authStatusEl.textContent = "VERIFYING CREDENTIALS...";
+  authProgressEl.classList.add("visible");
+
+  for (const progress of [18, 37, 61, 83, 100]) {
+    authProgressFillEl.style.width = `${progress}%`;
+    await wait(220);
+  }
+  await wait(220);
+  authStatusEl.classList.remove("loading");
+  authStatusEl.textContent = "AUTHENTICATED. SECURE CHANNEL OPEN.";
+  isAuthenticated = true;
+  authScreenEl.classList.add("hidden");
+  showProfileScreen();
+}
+
+function safeStopSpeech() {
+  if ("speechSynthesis" in window) {
+    window.speechSynthesis.cancel();
+  }
+  speechUtterance = null;
+}
+
+function getPreferredVoice() {
+  if (!("speechSynthesis" in window)) {
+    return null;
+  }
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) {
+    return null;
+  }
+
+  const preferredTokens = [
+    "natural",
+    "neural",
+    "online",
+    "guy",
+    "david",
+    "mark",
+    "english",
+    "en-us",
+    "google us english"
+  ];
+
+  const ranked = voices
+    .map((voice) => {
+      const name = `${voice.name} ${voice.lang}`.toLowerCase();
+      let score = 0;
+      for (const token of preferredTokens) {
+        if (name.includes(token)) {
+          score += 1;
+        }
+      }
+      return { voice, score };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  return ranked[0].voice || null;
+}
+
+function initVoices() {
+  if (!("speechSynthesis" in window) || voiceReady) {
+    return;
+  }
+  window.speechSynthesis.getVoices();
+  voiceReady = true;
+}
+
+function speakMessage(text) {
+  if (!("speechSynthesis" in window)) {
+    return;
+  }
+  safeStopSpeech();
+  const utterance = new SpeechSynthesisUtterance(text.replace(/\n/g, " "));
+  const selected = getPreferredVoice();
+  if (selected) {
+    utterance.voice = selected;
+  }
+  utterance.rate = 0.84;
+  utterance.pitch = 0.9;
+  utterance.volume = 1;
+  speechUtterance = utterance;
+  window.speechSynthesis.speak(utterance);
+}
+
+function stopMediaAudio() {
+  destructionAudio.pause();
+  destructionAudio.currentTime = 0;
+  backgroundAudio.pause();
+  backgroundAudio.currentTime = 0;
+  backgroundAudio.volume = BACKGROUND_VOLUME;
+  celebrationMusicAudio.pause();
+  celebrationMusicAudio.currentTime = 0;
+  if (celebrationPopHandle) {
+    clearInterval(celebrationPopHandle);
+    celebrationPopHandle = null;
+  }
+}
+
+function playAudioFile(audioEl, volume = 1) {
+  return new Promise((resolve) => {
+    audioEl.volume = volume;
+    audioEl.currentTime = 0;
+    const playPromise = audioEl.play();
+    if (playPromise && typeof playPromise.then === "function") {
+      playPromise.then(() => resolve(true)).catch(() => resolve(false));
+    } else {
+      resolve(true);
+    }
+  });
+}
+
+async function startBackgroundAudio() {
+  backgroundAudio.currentTime = 0;
+  backgroundAudio.volume = BACKGROUND_VOLUME;
+  return playAudioFile(backgroundAudio, BACKGROUND_VOLUME);
+}
+
+async function fadeOutBackgroundAudio(durationMs = 1300) {
+  const steps = 12;
+  const initialVolume = backgroundAudio.volume || BACKGROUND_VOLUME;
+  for (let step = 0; step < steps; step += 1) {
+    const ratio = 1 - (step + 1) / steps;
+    backgroundAudio.volume = Math.max(initialVolume * ratio, 0);
+    await wait(durationMs / steps);
+  }
+  backgroundAudio.pause();
+  backgroundAudio.currentTime = 0;
+  backgroundAudio.volume = BACKGROUND_VOLUME;
+}
+
+function playTone(type, start, duration, frequency, volume = 0.12) {
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) {
+    return;
+  }
+  const audioCtx = playTone.audioCtx || new AudioCtx();
+  playTone.audioCtx = audioCtx;
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(frequency, audioCtx.currentTime + start);
+  gain.gain.setValueAtTime(0.001, audioCtx.currentTime + start);
+  gain.gain.exponentialRampToValueAtTime(volume, audioCtx.currentTime + start + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + start + duration);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start(audioCtx.currentTime + start);
+  osc.stop(audioCtx.currentTime + start + duration + 0.04);
+}
+
+function playAcceptSequence() {
+  playTone("square", 0, 0.14, 740, 0.08);
+  playTone("square", 0, 0.14, 880, 0.08);
+}
+
+function startCelebrationPops() {
+  if (celebrationPopHandle) {
+    return;
+  }
+  celebrationPopHandle = setInterval(() => {
+    const randomFrequency = 560 + Math.random() * 420;
+    playTone("triangle", 0, 0.06, randomFrequency, 0.045);
+  }, 520);
+}
+
+async function startCelebrationAudio() {
+  const musicPlayed = await playAudioFile(celebrationMusicAudio, CELEBRATION_MUSIC_VOLUME);
+  if (!musicPlayed) {
+    startCelebrationPops();
+  }
+}
+
+function setupCelebrationMessage() {
+  const celebrationAgentName = String(config.agentName || config.recipientName || "Agent");
+  const age = getRecipientAge();
+  celebrationTitleEl.textContent = `Happy Birthday,\n${celebrationAgentName}!`;
+  celebrationSubtextEl.textContent = `Welcome to your amazing ${age}th year. Celebrate big and enjoy every moment.`;
+}
+
+function spawnConfetti(count = 220) {
+  confettiPieces = Array.from({ length: count }, () => ({
+    x: Math.random() * confettiCanvas.width,
+    y: -20 - Math.random() * confettiCanvas.height,
+    vx: -1.2 + Math.random() * 2.4,
+    vy: 2.1 + Math.random() * 3.3,
+    size: 4 + Math.random() * 8,
+    rot: Math.random() * Math.PI * 2,
+    rotSpeed: -0.2 + Math.random() * 0.4,
+    color: ["#ffd166", "#ef476f", "#06d6a0", "#118ab2", "#f8f9fa", "#c77dff"][
+      Math.floor(Math.random() * 6)
+    ]
+  }));
+}
+
+function animateConfetti() {
+  if (!confettiCtx) {
+    return;
+  }
+  confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  for (const piece of confettiPieces) {
+    piece.x += piece.vx;
+    piece.y += piece.vy;
+    piece.rot += piece.rotSpeed;
+    if (piece.y > confettiCanvas.height + 20) {
+      piece.y = -20;
+      piece.x = Math.random() * confettiCanvas.width;
+    }
+    confettiCtx.save();
+    confettiCtx.translate(piece.x, piece.y);
+    confettiCtx.rotate(piece.rot);
+    confettiCtx.fillStyle = piece.color;
+    confettiCtx.fillRect(-piece.size / 2, -piece.size / 2, piece.size, piece.size * 0.6);
+    confettiCtx.restore();
+  }
+  confettiAnimationHandle = requestAnimationFrame(animateConfetti);
+}
+
+function showCelebrationScreen() {
+  missionAbortRequested = true;
+  safeStopSpeech();
+  stopMediaAudio();
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+  appEl.classList.add("fade-out");
+  celebrationScreenEl.classList.add("visible");
+  setupCelebrationMessage();
+  if (confettiCanvas && !confettiAnimationHandle) {
+    spawnConfetti();
+    animateConfetti();
+  }
+  startCelebrationAudio();
+}
+
+async function playDestructSequence() {
+  // Lower BGM during self-destruct for clarity.
+  backgroundAudio.volume = 0.12;
+  const played = await playAudioFile(destructionAudio, 0.95);
+  if (played) {
+    return;
+  }
+  for (let i = 0; i < 10; i += 1) {
+    playTone("sawtooth", i * 0.115, 0.09, 1080 - i * 82, 0.11);
+  }
+  playTone("triangle", 1.1, 0.5, 64, 0.2);
+  playTone("square", 1.22, 0.13, 1800, 0.06);
+  playTone("triangle", 1.34, 0.28, 46, 0.2);
+}
+
+function spawnSmokeCloud(intensity = 90) {
+  const rect = terminal.getBoundingClientRect();
+  const sourceX = rect.left + rect.width * 0.5;
+  const sourceY = rect.top + rect.height * 0.55;
+  for (let i = 0; i < intensity; i += 1) {
+    const spreadX = rect.width * (0.15 + Math.random() * 0.8);
+    const spreadY = rect.height * (0.08 + Math.random() * 0.45);
+    const radius = 12 + Math.random() * 28;
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 3.6 + Math.random() * 5.4;
+    particles.push({
+      x: sourceX + (Math.random() - 0.5) * spreadX,
+      y: sourceY + (Math.random() - 0.5) * spreadY,
+      vx: Math.cos(angle) * speed * (0.85 + Math.random() * 0.35),
+      vy: Math.sin(angle) * speed * (0.7 + Math.random() * 0.5) - 0.75,
+      radius,
+      alpha: 0.24 + Math.random() * 0.28,
+      fade: 0.0034 + Math.random() * 0.007,
+      growth: 0.34 + Math.random() * 0.56,
+      drag: 0.9 + Math.random() * 0.02,
+      driftDrag: 0.976 + Math.random() * 0.01,
+      gravity: 0.006 + Math.random() * 0.015,
+      wobble: Math.random() * Math.PI * 2,
+      wobbleSpeed: 0.11 + Math.random() * 0.2,
+      wobbleAmount: 0.2 + Math.random() * 0.55,
+      gray: 65 + Math.floor(Math.random() * 100),
+      life: 0
+    });
+  }
+  if (!animationHandle) {
+    animateSmoke();
+  }
+}
+
+function animateSmoke() {
+  ctx.clearRect(0, 0, smokeCanvas.width, smokeCanvas.height);
+  particles = particles.filter((p) => p.alpha > 0);
+  for (const p of particles) {
+    p.life += 1;
+    p.wobble += p.wobbleSpeed;
+    // Fast explosive kick, then natural slow powder drift.
+    if (p.life < 8) {
+      p.vx *= p.drag;
+      p.vy *= p.drag;
+    } else {
+      p.vx *= p.driftDrag;
+      p.vy *= p.driftDrag;
+    }
+    p.vy += p.gravity;
+    p.vx += Math.sin(p.wobble) * 0.02;
+    p.x += p.vx;
+    p.y += p.vy;
+    p.x += Math.sin(p.wobble) * p.wobbleAmount;
+    p.alpha -= p.fade;
+    p.radius += p.growth;
+
+    const visibleAlpha = Math.max(p.alpha, 0);
+    const grad = ctx.createRadialGradient(
+      p.x - p.radius * 0.2,
+      p.y - p.radius * 0.24,
+      p.radius * 0.18,
+      p.x,
+      p.y,
+      p.radius
+    );
+    grad.addColorStop(0, `rgba(${p.gray + 18}, ${p.gray + 18}, ${p.gray + 18}, ${visibleAlpha * 0.55})`);
+    grad.addColorStop(0.52, `rgba(${p.gray}, ${p.gray}, ${p.gray}, ${visibleAlpha * 0.32})`);
+    grad.addColorStop(1, `rgba(${p.gray - 10}, ${p.gray - 10}, ${p.gray - 10}, 0)`);
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.ellipse(
+      p.x,
+      p.y,
+      p.radius * (0.82 + Math.sin(p.wobble) * 0.05),
+      p.radius * (1.02 + Math.cos(p.wobble * 0.85) * 0.06),
+      p.wobble * 0.14,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
+  }
+  if (particles.length > 0) {
+    animationHandle = requestAnimationFrame(animateSmoke);
+  } else {
+    animationHandle = null;
+  }
+}
+
+function startCountdown(seconds) {
+  countdownEl.classList.remove("hidden");
+  let remaining = seconds;
+  countdownEl.textContent = `SELF-DESTRUCT IN ${remaining}...`;
+  destructSoundStarted = false;
+
+  countdownTimer = setInterval(() => {
+    remaining -= 1;
+    if (remaining > 0) {
+      countdownEl.textContent = `SELF-DESTRUCT IN ${remaining}...`;
+      if (remaining === 1 && !destructSoundStarted) {
+        destructSoundStarted = true;
+        playDestructSequence();
+      }
+      if (remaining <= COUNTDOWN_BEEP_FROM) {
+        playTone("square", 0, 0.08, 1100, 0.08);
+      }
+    } else {
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+      triggerSelfDestruct();
+    }
+  }, 1000);
+}
+
+async function triggerSelfDestruct() {
+  safeStopSpeech();
+  if (!destructSoundStarted) {
+    destructSoundStarted = true;
+    await playDestructSequence();
+  }
+  fadeOutBackgroundAudio();
+  terminal.classList.add("smokeout");
+  spawnSmokeCloud(1200);
+  countdownEl.textContent = "SELF-DESTRUCT ACTIVATED";
+  await wait(2200);
+  missionTextEl.textContent = "";
+  finalTextEl.classList.remove("hidden");
+  countdownEl.classList.add("hidden");
+  isRunning = false;
+  showCelebrationScreen();
+}
+
+async function runMission() {
+  if (!isAuthenticated) {
+    return;
+  }
+  if (isRunning) {
+    return;
+  }
+  missionAbortRequested = false;
+  isRunning = true;
+
+  const rawName = nameInput.value.trim();
+  const defaultName = config.recipientName || "PHOENIX";
+  const defaultAgentName = config.agentName || defaultName;
+  const defaultAge = getRecipientAge();
+  const name = rawName || defaultName;
+  const agentAlias = defaultAgentName;
+  const age = Number.parseInt(ageInput.value, 10) || defaultAge;
+
+  agentNameEl.textContent = String(agentAlias).toUpperCase();
+  finalTextEl.classList.add("hidden");
+  terminal.classList.remove("smokeout");
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+
+  const msg = buildMessage(name, age, agentAlias);
+  await startBackgroundAudio();
+  if (missionAbortRequested) {
+    isRunning = false;
+    return;
+  }
+  await wait(MESSAGE_START_DELAY_MS);
+  if (missionAbortRequested) {
+    isRunning = false;
+    return;
+  }
+  playAcceptSequence();
+  if (missionAbortRequested) {
+    isRunning = false;
+    return;
+  }
+  speakMessage(msg);
+  await typeText(msg);
+  if (missionAbortRequested) {
+    isRunning = false;
+    return;
+  }
+  startCountdown(MESSAGE_LIFETIME);
+}
+
+replayBtn.addEventListener("click", showCelebrationScreen);
+authBtnEl.addEventListener("click", runAuthSequence);
+profileContinueBtnEl.addEventListener("click", openMissionTerminal);
+authPasswordInputEl.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    runAuthSequence();
+  }
+});
+initVoices();
+if ("speechSynthesis" in window) {
+  window.speechSynthesis.onvoiceschanged = initVoices;
+}
+
+if (config.recipientName) {
+  nameInput.value = String(config.recipientName);
+}
+ageInput.value = String(getRecipientAge());
+const initialAgentName = config.agentName || config.recipientName || "AGENT";
+agentNameEl.textContent = String(initialAgentName).toUpperCase();
+authAgentInputEl.value = String(initialAgentName);
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    safeStopSpeech();
+    stopMediaAudio();
+  }
+});

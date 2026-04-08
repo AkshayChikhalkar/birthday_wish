@@ -1,0 +1,28 @@
+window.MISSION_METADATA = {
+  recipientName: "Sarah Troll",
+  agentName: "Trolli",
+  recipientDob: "12-04-2000",
+  profilePhoto: "./assets/profile.jpg",
+  clearanceLevel: "OMEGA-7",
+  agentStatus: "ACTIVE",
+  agentAddress: "UNKNOWN // SAFEHOUSE REDACTED",
+  lastSeen: "Near cake storage, 22:14 IST",
+  speciality: "SOCIAL OPS / JOY ENGINEERING",
+  favoriteIntel: "Double chocolate, low evidence",
+  greeting: "Good evening",
+  introLine: "Your next assignment has been delivered with full birthday-level priority.",
+  yearLinePrefix: "As of this moment, you are officially entering Year",
+  objectives: [
+    "Celebrate without hesitation.",
+    "Accept cake, compliments, and unreasonable happiness.",
+    "Upgrade confidence, joy, and legendary energy."
+  ],
+  acceptanceLine:
+    "If you choose to accept this mission, your {age}th year will be your boldest one yet.",
+  countdownSeconds: 12,
+  countdownBeepFromSeconds: 10,
+  messageStartDelayMs: 2500,
+  celebrationMusicVolume: 0.45,
+  celebrationCheerVolume: 0.8,
+  closingLine: "Good luck, Agent."
+};
