@@ -17,7 +17,7 @@
     <div class="scanlines" aria-hidden="true"></div>
     <div class="noise" aria-hidden="true"></div>
     <canvas id="smokeCanvas" aria-hidden="true"></canvas>
-    <!-- Startup: autoplay + early inline play() + preload — use http(s), not file://. Audible autoplay may still require prior visits or site sound permission per browser policy. -->
+    <!-- Startup: autoplay + preload — volumes set in script.js (AUDIO). Use http(s), not file://. -->
     <audio
       id="startupAudio"
       class="startup-audio"
@@ -26,26 +26,7 @@
       loop
       playsinline
       autoplay
-      data-default-volume="0.38"
     ></audio>
-    <script>
-      (function () {
-        var el = document.getElementById("startupAudio");
-        if (!el) return;
-        var v = parseFloat(el.getAttribute("data-default-volume") || "0.38");
-        if (!isNaN(v)) el.volume = v;
-        function kick() {
-          if (window.__BW_SUPPRESS_STARTUP_KICKS) return;
-          el.muted = false;
-          var p = el.play();
-          if (p && p.catch) p.catch(function () {});
-        }
-        kick();
-        [0, 5, 15, 30, 60, 120, 250, 500, 1000, 2000, 3500, 5000, 7500].forEach(function (ms) {
-          setTimeout(kick, ms);
-        });
-      })();
-    </script>
 
     <section class="auth-screen" id="authScreen">
       <div class="auth-card">

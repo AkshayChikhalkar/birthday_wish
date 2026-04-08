@@ -27,7 +27,5 @@ window.MISSION_METADATA = {
   narrationFile: "./assets/narration.mp3",
   narrationVoice: "en-US-ChristopherNeural",
   narrationRate: "-5%",
-  celebrationMusicVolume: 0.45,
-  celebrationCheerVolume: 0.8,
   closingLine: "Good luck, Agent."
 };

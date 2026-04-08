@@ -26,8 +26,5 @@
   "narrationFile": "./assets/narration/narration-sarah-troll.mp3",
   "narrationVoice": "en-US-ChristopherNeural",
   "narrationRate": "-5%",
-  "backgroundVolume": 0.24,
-  "celebrationMusicVolume": 0.45,
-  "celebrationCheerVolume": 0.8,
   "closingLine": "Good luck, Agent."
 }
