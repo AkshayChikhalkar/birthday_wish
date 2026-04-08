@@ -544,6 +544,7 @@ hr {
 
 .controls label {
   color: #d5e7db;
+  font-size: 14px;
 }
 
 .controls input,
@@ -554,6 +555,7 @@ hr {
   color: var(--text);
   border-radius: 6px;
   font-family: inherit;
+  font-size: 16px;
 }
 
 .controls input[readonly] {
@@ -599,6 +601,7 @@ hr {
 #replayBtn {
   min-height: 44px;
   padding: 10px 12px;
+  border-radius: 6px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
