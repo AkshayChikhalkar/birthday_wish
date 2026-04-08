@@ -99,7 +99,8 @@ const startupAudio = document.getElementById("startupAudio") ?? createStartupAud
 let config = {};
 const narrationAudio = new Audio("./assets/narration/narration-default.mp3");
 let MESSAGE_START_DELAY_MS = 4000;
-let MESSAGE_LIFETIME = 12;
+/** Self-destruct countdown length (seconds); from profile `countdownSeconds`. */
+let COUNTDOWN_SECONDS = 12;
 let COUNTDOWN_BEEP_FROM = 10;
 destructionAudio.preload = "auto";
 backgroundAudio.preload = "auto";
@@ -254,12 +255,12 @@ function duckBackgroundForNarration() {
 }
 
 function restoreBackgroundAfterNarration() {
-  backgroundAudio.volume = Math.min(1, AUDIO.missionBackground);
+  syncBackgroundVolumeFromConfig();
 }
 
 function applyRuntimeConfig() {
   MESSAGE_START_DELAY_MS = Number(config.messageStartDelayMs) || 4000;
-  MESSAGE_LIFETIME = Number(config.countdownSeconds) || 12;
+  COUNTDOWN_SECONDS = Number(config.countdownSeconds) || 12;
   COUNTDOWN_BEEP_FROM = Number(config.countdownBeepFromSeconds) || 10;
   const narrationFile = String(config.narrationFile || "./assets/narration/narration-default.mp3");
   if (narrationAudio.src !== new URL(narrationFile, window.location.href).href) {
@@ -267,7 +268,6 @@ function applyRuntimeConfig() {
   }
 
   backgroundAudio.loop = true;
-  syncBackgroundVolumeFromConfig();
   backgroundAudio.muted = false;
   celebrationMusicAudio.loop = true;
   startupAudio.loop = true;
@@ -311,7 +311,7 @@ function buildMessage(name, age, agentAlias) {
     .replaceAll("{age}", String(enteringYear));
   const selfDestructLineTemplate =
     config.selfDestructLineTemplate || "This message will self-destruct in {seconds} seconds.";
-  const selfDestructLine = selfDestructLineTemplate.replace("{seconds}", String(MESSAGE_LIFETIME));
+  const selfDestructLine = selfDestructLineTemplate.replace("{seconds}", String(COUNTDOWN_SECONDS));
   const closingLine = config.closingLine || "Good luck, Agent.";
 
   return [
@@ -662,7 +662,19 @@ function getPreferredVoice() {
     })
     .sort((a, b) => b.score - a.score);
 
-  return ranked[0].voice || null;
+  return ranked[0].voice;
+}
+
+function createNarrationUtterance(text) {
+  const utterance = new SpeechSynthesisUtterance(text.replace(/\n/g, " "));
+  const selected = getPreferredVoice();
+  if (selected) {
+    utterance.voice = selected;
+  }
+  utterance.rate = 0.84;
+  utterance.pitch = 0.9;
+  utterance.volume = AUDIO.narration;
+  return utterance;
 }
 
 function initVoices() {
@@ -688,14 +700,7 @@ function speakMessage(text) {
         );
       } else if ("speechSynthesis" in window) {
         safeStopSpeech();
-        const utterance = new SpeechSynthesisUtterance(text.replace(/\n/g, " "));
-        const selected = getPreferredVoice();
-        if (selected) {
-          utterance.voice = selected;
-        }
-        utterance.rate = 0.84;
-        utterance.pitch = 0.9;
-        utterance.volume = AUDIO.narration;
+        const utterance = createNarrationUtterance(text);
         utterance.onend = () => {
           restoreBackgroundAfterNarration();
         };
@@ -712,14 +717,7 @@ function speakMessage(text) {
     return;
   }
   safeStopSpeech();
-  const utterance = new SpeechSynthesisUtterance(text.replace(/\n/g, " "));
-  const selected = getPreferredVoice();
-  if (selected) {
-    utterance.voice = selected;
-  }
-  utterance.rate = 0.84;
-  utterance.pitch = 0.9;
-  utterance.volume = AUDIO.narration;
+  const utterance = createNarrationUtterance(text);
   utterance.onend = () => {
     restoreBackgroundAfterNarration();
   };
@@ -1127,7 +1125,7 @@ async function runMission() {
     isRunning = false;
     return;
   }
-  startCountdown(MESSAGE_LIFETIME);
+  startCountdown(COUNTDOWN_SECONDS);
 }
 
 replayBtn.addEventListener("click", showCelebrationScreen);
