@@ -25,6 +25,12 @@ body {
   overflow: hidden;
 }
 
+button {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 16px;
+  letter-spacing: 0.2px;
+}
+
 .app {
   min-height: 100vh;
   display: grid;
@@ -586,6 +592,17 @@ hr {
   transform: translateX(-135%);
   animation: missionBtnSweep 2.4s linear infinite;
   pointer-events: none;
+}
+
+#authBtn,
+#profileContinueBtn,
+#replayBtn {
+  min-height: 44px;
+  padding: 10px 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  line-height: 1.1;
 }
 
 .countdown,
