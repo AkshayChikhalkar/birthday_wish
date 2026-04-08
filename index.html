@@ -35,6 +35,7 @@
         var v = parseFloat(el.getAttribute("data-default-volume") || "0.38");
         if (!isNaN(v)) el.volume = v;
         function kick() {
+          if (window.__BW_SUPPRESS_STARTUP_KICKS) return;
           el.muted = false;
           var p = el.play();
           if (p && p.catch) p.catch(function () {});

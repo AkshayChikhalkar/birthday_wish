@@ -54,6 +54,8 @@ let missionAbortRequested = false;
 let audioUnlocked = false;
 let currentProfileSlug = "default";
 const preloadedImageRefs = [];
+/** When true, inline HTML retry kicks + deferred retries must not call play() (avoids double audio during auth). */
+let startupAutoplayRetryIds = [];
 
 const destructionAudio = new Audio("./assets/distruction.mp3");
 const backgroundAudio = new Audio("./assets/background.mp3");
@@ -69,7 +71,7 @@ function createStartupAudioFallback() {
 const startupAudio = document.getElementById("startupAudio") ?? createStartupAudioFallback();
 let config = {};
 const narrationAudio = new Audio("./assets/narration/narration-default.mp3");
-let BACKGROUND_VOLUME = 0.4;
+let BACKGROUND_VOLUME = 0.3;
 let STARTUP_VOLUME = 0.38;
 /** Lowest volume during auth→profile transition = STARTUP_VOLUME × this (0–1). Higher = shallower dip (e.g. 0.45 is subtle). */
 const STARTUP_DIP_MIN_RATIO = 0.35;
@@ -419,24 +421,42 @@ function showProfileScreen() {
 function tryStartStartupMusic() {
   startupAudio.volume = STARTUP_VOLUME;
   startupAudio.muted = false;
+  if (!startupAudio.paused) {
+    return;
+  }
   const playPromise = startupAudio.play();
   if (playPromise && typeof playPromise.then === "function") {
     playPromise.catch(() => {});
   }
 }
 
+function clearStartupAutoplayRetries() {
+  for (const id of startupAutoplayRetryIds) {
+    clearTimeout(id);
+  }
+  startupAutoplayRetryIds = [];
+}
+
+/** Stops deferred play() bursts from overlapping real playback (e.g. on Authenticate). */
+function suppressStartupAutoplayKicks() {
+  window.__BW_SUPPRESS_STARTUP_KICKS = true;
+  clearStartupAutoplayRetries();
+}
+
 /** Re-tries after boot: slow networks + engagement can allow play() to succeed without a tap. */
 function scheduleStartupAutoplayRetries() {
+  clearStartupAutoplayRetries();
   const delays = [0, 20, 80, 160, 320, 640, 1200, 2000, 3200, 5000, 8000];
   for (const ms of delays) {
-    setTimeout(() => {
-      if (isAuthenticated) {
+    const id = setTimeout(() => {
+      if (isAuthenticated || window.__BW_SUPPRESS_STARTUP_KICKS) {
         return;
       }
       if (startupAudio.paused) {
         tryStartStartupMusic();
       }
     }, ms);
+    startupAutoplayRetryIds.push(id);
   }
 }
 
@@ -500,6 +520,7 @@ async function runAuthSequence() {
   authBtnEl.disabled = true;
   authPasswordInputEl.disabled = true;
   authPasswordInputEl.blur();
+  suppressStartupAutoplayKicks();
   await unlockAudioIfNeeded();
   if (startupAudio.paused) {
     tryStartStartupMusic();
@@ -1037,6 +1058,7 @@ document.addEventListener("visibilitychange", () => {
 
 window.addEventListener("pageshow", (event) => {
   if (event.persisted) {
+    window.__BW_SUPPRESS_STARTUP_KICKS = false;
     tryStartStartupMusic();
     scheduleStartupAutoplayRetries();
   }
@@ -1049,6 +1071,7 @@ window.addEventListener("load", () => {
 });
 
 async function bootApp() {
+  window.__BW_SUPPRESS_STARTUP_KICKS = false;
   const requestedSlug = getRequestedProfileSlug();
   currentProfileSlug = requestedSlug;
   config = await fetchProfileConfig(requestedSlug);
