@@ -411,6 +411,11 @@ function showProfileScreen() {
   profileScreenEl.classList.remove("hidden");
 }
 
+/**
+ * Startup music: we call play() from HTML (inline), here, retries, load, and rAF.
+ * Browsers may still block audible autoplay until the user has engaged with this origin
+ * (Media Engagement) or allowed sound for the site — there is no JS bypass for that.
+ */
 function tryStartStartupMusic() {
   startupAudio.volume = STARTUP_VOLUME;
   startupAudio.muted = false;
@@ -420,9 +425,9 @@ function tryStartStartupMusic() {
   }
 }
 
-/** Re-tries give http(s) loads + Media Engagement the best chance to start without a click. */
+/** Re-tries after boot: slow networks + engagement can allow play() to succeed without a tap. */
 function scheduleStartupAutoplayRetries() {
-  const delays = [0, 15, 50, 100, 200, 400, 800, 1200, 2000, 3000];
+  const delays = [0, 20, 80, 160, 320, 640, 1200, 2000, 3200, 5000, 8000];
   for (const ms of delays) {
     setTimeout(() => {
       if (isAuthenticated) {
@@ -1037,6 +1042,12 @@ window.addEventListener("pageshow", (event) => {
   }
 });
 
+window.addEventListener("load", () => {
+  if (!isAuthenticated && startupAudio.paused) {
+    tryStartStartupMusic();
+  }
+});
+
 async function bootApp() {
   const requestedSlug = getRequestedProfileSlug();
   currentProfileSlug = requestedSlug;
@@ -1066,6 +1077,13 @@ async function bootApp() {
   );
   tryStartStartupMusic();
   scheduleStartupAutoplayRetries();
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (!isAuthenticated && startupAudio.paused) {
+        tryStartStartupMusic();
+      }
+    });
+  });
 }
 
 bootApp().catch(() => {
