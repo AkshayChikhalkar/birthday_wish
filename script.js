@@ -61,7 +61,7 @@ let removeStartupInteractionListeners = null;
 
 /** Single source of truth for audio mix levels — edit here only (not in profile JSON). */
 const AUDIO = {
-  missionBackground: 0.1,
+  missionBackground: 0.2,
   startup: 0.38,
   celebration: 0.45,
   narration: 1,
