@@ -309,6 +309,23 @@ button {
   cursor: pointer;
 }
 
+#authBtn {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 0 rgba(114, 238, 191, 0.25);
+  animation: missionBtnPulse 2.8s ease-in-out infinite;
+}
+
+#authBtn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 36%, rgba(155, 245, 216, 0.42) 50%, transparent 64%);
+  transform: translateX(-135%);
+  animation: missionBtnSweep 2.4s linear infinite;
+  pointer-events: none;
+}
+
 .auth-progress {
   height: 7px;
   border-radius: 999px;
