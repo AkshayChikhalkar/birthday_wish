@@ -91,6 +91,7 @@ resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
 function buildMessage(name, age, agentAlias) {
+  const enteringYear = Number(age) + 1;
   const greeting = config.greeting || "Good evening";
   const introLine =
     config.introLine ||
@@ -108,7 +109,7 @@ function buildMessage(name, age, agentAlias) {
   const acceptanceTemplate =
     config.acceptanceLine ||
     "If you choose to accept this mission, your {age}th year will be your boldest one yet.";
-  const acceptanceLine = acceptanceTemplate.replace("{age}", String(age));
+  const acceptanceLine = acceptanceTemplate.replace("{age}", String(enteringYear));
   const selfDestructLineTemplate =
     config.selfDestructLineTemplate || "This message will self-destruct in {seconds} seconds.";
   const selfDestructLine = selfDestructLineTemplate.replace("{seconds}", String(MESSAGE_LIFETIME));
@@ -118,7 +119,7 @@ function buildMessage(name, age, agentAlias) {
     `${greeting}, Agent ${agentAlias}.`,
     "",
     introLine,
-    `${yearLinePrefix} ${age}.`,
+    `${yearLinePrefix} ${enteringYear}.`,
     "",
     objectivesHeading,
     ...objectives.map((objective) => `- ${objective}`),
@@ -489,9 +490,9 @@ async function startCelebrationAudio() {
 
 function setupCelebrationMessage() {
   const celebrationAgentName = String(config.agentName || config.recipientName || "Agent");
-  const age = getRecipientAge();
+  const enteringYear = getRecipientAge() + 1;
   celebrationTitleEl.textContent = `Happy Birthday,\n${celebrationAgentName}!`;
-  celebrationSubtextEl.textContent = `Welcome to your amazing ${age}th year. Celebrate big and enjoy every moment.`;
+  celebrationSubtextEl.textContent = `Welcome to your amazing ${enteringYear}th year. Celebrate big and enjoy every moment.`;
 }
 
 function spawnConfetti(count = 220) {

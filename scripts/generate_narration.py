@@ -79,6 +79,7 @@ def build_message(source: str) -> str:
     closing = require_string_value(source, "closingLine")
     dob = require_string_value(source, "recipientDob")
     age = parse_age(dob)
+    entering_year = age + 1
     countdown = parse_int_value(source, "countdownSeconds", 0)
     if countdown <= 0:
         raise ValueError("Missing or invalid metadata int: countdownSeconds")
@@ -90,10 +91,10 @@ def build_message(source: str) -> str:
     lines = [
         f"{greeting}, Agent {agent}.",
         intro,
-        f"{year_prefix} {age}.",
+        f"{year_prefix} {entering_year}.",
         objectives_heading,
         *objectives,
-        acceptance.replace("{age}", str(age)),
+        acceptance.replace("{age}", str(entering_year)),
         self_destruct_line,
         closing,
     ]
