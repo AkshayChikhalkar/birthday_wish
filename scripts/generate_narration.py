@@ -122,8 +122,9 @@ async def generate_mp3(text: str, voice: str, rate: str, output_path: pathlib.Pa
     await communicator.save(str(output_path))
 
 
-def get_output_path(profile: dict) -> pathlib.Path:
-    narration_file = parse_string_value(profile, "narrationFile", "./assets/narration.mp3")
+def get_output_path(profile_path: pathlib.Path, profile: dict) -> pathlib.Path:
+    default_narration_file = f"./assets/narration/narration-{profile_path.stem}.mp3"
+    narration_file = parse_string_value(profile, "narrationFile", default_narration_file)
     relative_path = narration_file[2:] if narration_file.startswith("./") else narration_file
     return ROOT / relative_path
 
@@ -146,7 +147,7 @@ def main():
         text = build_message(profile)
         voice = parse_string_value(profile, "narrationVoice", "en-US-ChristopherNeural")
         rate = parse_string_value(profile, "narrationRate", "-5%")
-        output_path = get_output_path(profile)
+        output_path = get_output_path(profile_path, profile)
         asyncio.run(generate_mp3(text, voice=voice, rate=rate, output_path=output_path))
         print(f"Narration generated from {profile_path.name}: {output_path}")
 

@@ -52,12 +52,13 @@ let destructSoundStarted = false;
 let isAuthenticated = false;
 let missionAbortRequested = false;
 let audioUnlocked = false;
+let currentProfileSlug = "default";
 
 const destructionAudio = new Audio("./assets/distruction.mp3");
 const backgroundAudio = new Audio("./assets/background.mp3");
 const celebrationMusicAudio = new Audio("./assets/happy-birthday.mp3");
 let config = {};
-const narrationAudio = new Audio("./assets/narration.mp3");
+const narrationAudio = new Audio("./assets/narration/narration-default.mp3");
 let BACKGROUND_VOLUME = 0.4;
 let MESSAGE_START_DELAY_MS = 4000;
 let MESSAGE_LIFETIME = 12;
@@ -117,7 +118,7 @@ function applyRuntimeConfig() {
   COUNTDOWN_BEEP_FROM = Number(config.countdownBeepFromSeconds) || 10;
   CELEBRATION_MUSIC_VOLUME = Number(config.celebrationMusicVolume) || 0.45;
 
-  const narrationFile = String(config.narrationFile || "./assets/narration.mp3");
+  const narrationFile = String(config.narrationFile || "./assets/narration/narration-default.mp3");
   if (narrationAudio.src !== new URL(narrationFile, window.location.href).href) {
     narrationAudio.src = narrationFile;
   }
@@ -282,7 +283,7 @@ function setupProfileData() {
   const lastSeen = String(config.lastSeen || "UNKNOWN // TRACKING OFFLINE");
   const speciality = String(config.speciality || "SOCIAL OPS / JOY ENGINEERING");
   const favoriteIntel = String(config.favoriteIntel || "CAKE ACQUISITION");
-  const photoPath = String(config.profilePhoto || "./assets/IMG_5981_2.JPG");
+  const photoPath = String(config.profilePhoto || `./assets/profile/profile-${currentProfileSlug}.jpg`);
 
   profileAgentAliasEl.textContent = alias;
   profileNameEl.textContent = name;
@@ -295,6 +296,10 @@ function setupProfileData() {
   profileStatusEl.textContent = status;
   profileFavoriteIntelEl.textContent = favoriteIntel;
   profileClassifiedLevelEl.textContent = clearance;
+  profilePhotoEl.onerror = () => {
+    profilePhotoEl.onerror = null;
+    profilePhotoEl.src = "./assets/profile/profile-default.jpg";
+  };
   profilePhotoEl.src = photoPath;
 }
 
@@ -859,6 +864,7 @@ document.addEventListener("visibilitychange", () => {
 
 async function bootApp() {
   const requestedSlug = getRequestedProfileSlug();
+  currentProfileSlug = requestedSlug;
   config = await fetchProfileConfig(requestedSlug);
   applyRuntimeConfig();
 
