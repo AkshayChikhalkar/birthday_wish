@@ -31,11 +31,13 @@ jobs:
         run: pip install edge-tts
 
       - name: Generate narration MP3
-        run: python scripts/generate_narration.py
+        run: |
+          python scripts/generate_narration.py
+          test -f assets/narration.mp3
 
       - name: Commit generated narration
         run: |
-          if git diff --quiet -- assets/narration.mp3; then
+          if [ -z "$(git status --porcelain -- assets/narration.mp3)" ]; then
             echo "No narration changes."
             exit 0
           fi
