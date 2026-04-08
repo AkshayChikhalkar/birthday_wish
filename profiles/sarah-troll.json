@@ -14,9 +14,9 @@
   "yearLinePrefix": "As of this moment, you are officially entering Year",
   "objectivesHeading": "Mission objectives:",
   "objectives": [
-    "Celebrate without hesitation.",
-    "Accept cake, compliments, and unreasonable happiness.",
-    "Upgrade confidence, joy, and legendary energy."
+  "Celebrate with style, charm, and dramatic flair.",
+  "Receive cake, hugs, and highly classified good wishes.",
+  "Enhance happiness, confidence, and heroic birthday momentum."
   ],
   "acceptanceLine": "If you choose to accept this mission, your {ageOrdinal} year will be your boldest one yet.",
   "selfDestructLineTemplate": "This message will self-destruct in {seconds} seconds.",
