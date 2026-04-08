@@ -92,6 +92,7 @@ window.addEventListener("resize", resizeCanvas);
 
 function buildMessage(name, age, agentAlias) {
   const enteringYear = Number(age) + 1;
+  const enteringYearOrdinal = formatOrdinal(enteringYear);
   const greeting = config.greeting || "Good evening";
   const introLine =
     config.introLine ||
@@ -108,8 +109,10 @@ function buildMessage(name, age, agentAlias) {
         ];
   const acceptanceTemplate =
     config.acceptanceLine ||
-    "If you choose to accept this mission, your {age}th year will be your boldest one yet.";
-  const acceptanceLine = acceptanceTemplate.replace("{age}", String(enteringYear));
+    "If you choose to accept this mission, your {ageOrdinal} year will be your boldest one yet.";
+  const acceptanceLine = acceptanceTemplate
+    .replaceAll("{ageOrdinal}", enteringYearOrdinal)
+    .replaceAll("{age}", String(enteringYear));
   const selfDestructLineTemplate =
     config.selfDestructLineTemplate || "This message will self-destruct in {seconds} seconds.";
   const selfDestructLine = selfDestructLineTemplate.replace("{seconds}", String(MESSAGE_LIFETIME));
@@ -130,6 +133,25 @@ function buildMessage(name, age, agentAlias) {
     "",
     closingLine
   ].join("\n");
+}
+
+function formatOrdinal(value) {
+  const num = Math.abs(Number(value));
+  const mod100 = num % 100;
+  if (mod100 >= 11 && mod100 <= 13) {
+    return `${num}th`;
+  }
+  const mod10 = num % 10;
+  if (mod10 === 1) {
+    return `${num}st`;
+  }
+  if (mod10 === 2) {
+    return `${num}nd`;
+  }
+  if (mod10 === 3) {
+    return `${num}rd`;
+  }
+  return `${num}th`;
 }
 
 async function typeText(text, speed = 60) {
@@ -492,7 +514,7 @@ function setupCelebrationMessage() {
   const celebrationAgentName = String(config.agentName || config.recipientName || "Agent");
   const enteringYear = getRecipientAge() + 1;
   celebrationTitleEl.textContent = `Happy Birthday,\n${celebrationAgentName}!`;
-  celebrationSubtextEl.textContent = `Welcome to your amazing ${enteringYear}th year. Celebrate big and enjoy every moment.`;
+  celebrationSubtextEl.textContent = `Welcome to your amazing ${formatOrdinal(enteringYear)} year. Celebrate big and enjoy every moment.`;
 }
 
 function spawnConfetti(count = 220) {

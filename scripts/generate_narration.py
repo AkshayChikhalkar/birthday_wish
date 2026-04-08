@@ -67,6 +67,21 @@ def parse_age(dob: str) -> int:
     return age if age >= 0 else 27
 
 
+def format_ordinal(value: int) -> str:
+    num = abs(int(value))
+    mod100 = num % 100
+    if 11 <= mod100 <= 13:
+        return f"{num}th"
+    mod10 = num % 10
+    if mod10 == 1:
+        return f"{num}st"
+    if mod10 == 2:
+        return f"{num}nd"
+    if mod10 == 3:
+        return f"{num}rd"
+    return f"{num}th"
+
+
 def build_message(source: str) -> str:
     recipient = require_string_value(source, "recipientName")
     agent = parse_string_value(source, "agentName", recipient).strip() or recipient
@@ -80,6 +95,7 @@ def build_message(source: str) -> str:
     dob = require_string_value(source, "recipientDob")
     age = parse_age(dob)
     entering_year = age + 1
+    entering_year_ordinal = format_ordinal(entering_year)
     countdown = parse_int_value(source, "countdownSeconds", 0)
     if countdown <= 0:
         raise ValueError("Missing or invalid metadata int: countdownSeconds")
@@ -94,7 +110,7 @@ def build_message(source: str) -> str:
         f"{year_prefix} {entering_year}.",
         objectives_heading,
         *objectives,
-        acceptance.replace("{age}", str(entering_year)),
+        acceptance.replace("{ageOrdinal}", entering_year_ordinal).replace("{age}", str(entering_year)),
         self_destruct_line,
         closing,
     ]

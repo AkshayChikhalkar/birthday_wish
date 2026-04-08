@@ -19,7 +19,7 @@ window.MISSION_METADATA = {
     "Upgrade confidence, joy, and legendary energy."
   ],
   acceptanceLine:
-    "If you choose to accept this mission, your {age}th year will be your boldest one yet.",
+    "If you choose to accept this mission, your {ageOrdinal} year will be your boldest one yet.",
   selfDestructLineTemplate: "This message will self-destruct in {seconds} seconds.",
   countdownSeconds: 12,
   countdownBeepFromSeconds: 10,
