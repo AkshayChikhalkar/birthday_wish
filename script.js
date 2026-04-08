@@ -59,14 +59,29 @@ let startupAutoplayRetryIds = [];
 /** Clears document-level listeners for “tap anywhere to start” startup audio. */
 let removeStartupInteractionListeners = null;
 
-/** Single source of truth for audio mix levels — edit here only (not in profile JSON). */
+/**
+ * Single source of truth for all mix levels and related timing — edit here only (not in profile JSON).
+ */
 const AUDIO = {
   missionBackground: 0.2,
   startup: 0.38,
   celebration: 0.45,
   narration: 1,
-  /** Reserved for future UI; not used by script logic today */
-  celebrationCheer: 0.8
+  /** Reserved for future UI */
+  celebrationCheer: 0.8,
+  /** Mission BGM while self-destruct SFX plays */
+  missionBackgroundDuringDestruct: 0.12,
+  /** Narration duck: multiply mission BGM, then cap */
+  narrationDuckMobileFactor: 0.2,
+  narrationDuckMobileCap: 0.04,
+  narrationDuckDesktopFactor: 0.42,
+  narrationDuckDesktopCap: 0.1,
+  destructionSfx: 0.95,
+  /** Auth → profile startup bed dip */
+  startupDipMinRatio: 0.35,
+  startupDipSteps: 5,
+  startupDipStepMs: 30,
+  startupDipHoldMs: 55
 };
 
 const destructionAudio = new Audio("./assets/distruction.mp3");
@@ -83,31 +98,20 @@ function createStartupAudioFallback() {
 const startupAudio = document.getElementById("startupAudio") ?? createStartupAudioFallback();
 let config = {};
 const narrationAudio = new Audio("./assets/narration/narration-default.mp3");
-let BACKGROUND_VOLUME = AUDIO.missionBackground;
-let STARTUP_VOLUME = AUDIO.startup;
-/** Lowest volume during auth→profile transition = STARTUP_VOLUME × this (0–1). Higher = shallower dip (e.g. 0.45 is subtle). */
-const STARTUP_DIP_MIN_RATIO = 0.35;
-const STARTUP_DIP_STEPS = 5;
-const STARTUP_DIP_STEP_MS = 30;
-const STARTUP_DIP_HOLD_MS = 55;
 let MESSAGE_START_DELAY_MS = 4000;
 let MESSAGE_LIFETIME = 12;
 let COUNTDOWN_BEEP_FROM = 10;
-let CELEBRATION_MUSIC_VOLUME = AUDIO.celebration;
 destructionAudio.preload = "auto";
 backgroundAudio.preload = "auto";
 celebrationMusicAudio.preload = "auto";
 startupAudio.preload = "auto";
 narrationAudio.preload = "auto";
 backgroundAudio.loop = true;
-backgroundAudio.volume = BACKGROUND_VOLUME;
 backgroundAudio.muted = false;
 celebrationMusicAudio.loop = true;
-celebrationMusicAudio.volume = CELEBRATION_MUSIC_VOLUME;
 startupAudio.loop = true;
-startupAudio.volume = STARTUP_VOLUME;
 narrationAudio.loop = false;
-narrationAudio.volume = AUDIO.narration;
+applyAudioLevelsToMediaElements();
 
 // Proactively load audio buffers to reduce first-play latency.
 destructionAudio.load();
@@ -115,6 +119,13 @@ backgroundAudio.load();
 celebrationMusicAudio.load();
 startupAudio.load();
 narrationAudio.load();
+
+function applyAudioLevelsToMediaElements() {
+  backgroundAudio.volume = Math.min(1, AUDIO.missionBackground);
+  celebrationMusicAudio.volume = AUDIO.celebration;
+  startupAudio.volume = AUDIO.startup;
+  narrationAudio.volume = AUDIO.narration;
+}
 
 function preloadAuthPageAssets() {
   const profilePhotoPath = String(
@@ -226,8 +237,7 @@ function isMissionBackgroundMobileReduction() {
 }
 
 function syncBackgroundVolumeFromConfig() {
-  BACKGROUND_VOLUME = Math.min(1, AUDIO.missionBackground);
-  backgroundAudio.volume = BACKGROUND_VOLUME;
+  backgroundAudio.volume = Math.min(1, AUDIO.missionBackground);
 }
 
 /** While narration plays, pull mission BGM down so voice is intelligible (especially on phones). */
@@ -235,24 +245,22 @@ function duckBackgroundForNarration() {
   if (backgroundAudio.paused) {
     return;
   }
+  const base = AUDIO.missionBackground;
   if (isMissionBackgroundMobileReduction()) {
-    backgroundAudio.volume = Math.min(BACKGROUND_VOLUME * 0.2, 0.04);
+    backgroundAudio.volume = Math.min(base * AUDIO.narrationDuckMobileFactor, AUDIO.narrationDuckMobileCap);
   } else {
-    backgroundAudio.volume = Math.min(BACKGROUND_VOLUME * 0.42, 0.1);
+    backgroundAudio.volume = Math.min(base * AUDIO.narrationDuckDesktopFactor, AUDIO.narrationDuckDesktopCap);
   }
 }
 
 function restoreBackgroundAfterNarration() {
-  backgroundAudio.volume = BACKGROUND_VOLUME;
+  backgroundAudio.volume = Math.min(1, AUDIO.missionBackground);
 }
 
 function applyRuntimeConfig() {
   MESSAGE_START_DELAY_MS = Number(config.messageStartDelayMs) || 4000;
   MESSAGE_LIFETIME = Number(config.countdownSeconds) || 12;
   COUNTDOWN_BEEP_FROM = Number(config.countdownBeepFromSeconds) || 10;
-  CELEBRATION_MUSIC_VOLUME = AUDIO.celebration;
-  STARTUP_VOLUME = AUDIO.startup;
-
   const narrationFile = String(config.narrationFile || "./assets/narration/narration-default.mp3");
   if (narrationAudio.src !== new URL(narrationFile, window.location.href).href) {
     narrationAudio.src = narrationFile;
@@ -262,11 +270,9 @@ function applyRuntimeConfig() {
   syncBackgroundVolumeFromConfig();
   backgroundAudio.muted = false;
   celebrationMusicAudio.loop = true;
-  celebrationMusicAudio.volume = CELEBRATION_MUSIC_VOLUME;
   startupAudio.loop = true;
-  startupAudio.volume = STARTUP_VOLUME;
   narrationAudio.loop = false;
-  narrationAudio.volume = AUDIO.narration;
+  applyAudioLevelsToMediaElements();
   destructionAudio.preload = "auto";
   backgroundAudio.preload = "auto";
   celebrationMusicAudio.preload = "auto";
@@ -457,7 +463,7 @@ function showProfileScreen() {
  * (Media Engagement) or allowed sound for the site — there is no JS bypass for that.
  */
 function tryStartStartupMusic() {
-  startupAudio.volume = STARTUP_VOLUME;
+  startupAudio.volume = AUDIO.startup;
   startupAudio.muted = false;
   if (!startupAudio.paused) {
     removeStartupInteractionListeners?.();
@@ -535,24 +541,24 @@ async function startupAuthToProfileTransition() {
   if (startupAudio.paused) {
     return;
   }
-  const base = startupAudio.volume || STARTUP_VOLUME;
-  const low = base * STARTUP_DIP_MIN_RATIO;
-  const steps = STARTUP_DIP_STEPS;
+  const base = startupAudio.volume || AUDIO.startup;
+  const low = base * AUDIO.startupDipMinRatio;
+  const steps = AUDIO.startupDipSteps;
   for (let i = 0; i < steps; i += 1) {
     startupAudio.volume = base - ((base - low) * (i + 1)) / steps;
-    await wait(STARTUP_DIP_STEP_MS);
+    await wait(AUDIO.startupDipStepMs);
   }
-  await wait(STARTUP_DIP_HOLD_MS);
+  await wait(AUDIO.startupDipHoldMs);
   for (let i = 0; i < steps; i += 1) {
     startupAudio.volume = low + ((base - low) * (i + 1)) / steps;
-    await wait(STARTUP_DIP_STEP_MS);
+    await wait(AUDIO.startupDipStepMs);
   }
   startupAudio.volume = base;
 }
 
 async function fadeOutStartupAudio(durationMs = 700) {
   const steps = 14;
-  const initial = startupAudio.volume || STARTUP_VOLUME;
+  const initial = startupAudio.volume || AUDIO.startup;
   for (let step = 0; step < steps; step += 1) {
     const ratio = 1 - (step + 1) / steps;
     startupAudio.volume = Math.max(initial * ratio, 0);
@@ -560,7 +566,7 @@ async function fadeOutStartupAudio(durationMs = 700) {
   }
   startupAudio.pause();
   startupAudio.currentTime = 0;
-  startupAudio.volume = STARTUP_VOLUME;
+  startupAudio.volume = AUDIO.startup;
 }
 
 async function openMissionTerminal() {
@@ -726,10 +732,10 @@ function stopMediaAudio() {
   destructionAudio.currentTime = 0;
   backgroundAudio.pause();
   backgroundAudio.currentTime = 0;
-  backgroundAudio.volume = BACKGROUND_VOLUME;
+  backgroundAudio.volume = Math.min(1, AUDIO.missionBackground);
   startupAudio.pause();
   startupAudio.currentTime = 0;
-  startupAudio.volume = STARTUP_VOLUME;
+  startupAudio.volume = AUDIO.startup;
   celebrationMusicAudio.pause();
   celebrationMusicAudio.currentTime = 0;
   narrationAudio.pause();
@@ -755,8 +761,9 @@ function playAudioFile(audioEl, volume = 1) {
 
 async function startBackgroundAudio() {
   backgroundAudio.currentTime = 0;
-  backgroundAudio.volume = BACKGROUND_VOLUME;
-  return playAudioFile(backgroundAudio, BACKGROUND_VOLUME);
+  const v = Math.min(1, AUDIO.missionBackground);
+  backgroundAudio.volume = v;
+  return playAudioFile(backgroundAudio, v);
 }
 
 async function unlockAudioIfNeeded() {
@@ -793,7 +800,7 @@ async function unlockAudioIfNeeded() {
 
 async function fadeOutBackgroundAudio(durationMs = 1300) {
   const steps = 12;
-  const initialVolume = backgroundAudio.volume || BACKGROUND_VOLUME;
+  const initialVolume = backgroundAudio.volume || AUDIO.missionBackground;
   for (let step = 0; step < steps; step += 1) {
     const ratio = 1 - (step + 1) / steps;
     backgroundAudio.volume = Math.max(initialVolume * ratio, 0);
@@ -801,7 +808,7 @@ async function fadeOutBackgroundAudio(durationMs = 1300) {
   }
   backgroundAudio.pause();
   backgroundAudio.currentTime = 0;
-  backgroundAudio.volume = BACKGROUND_VOLUME;
+  backgroundAudio.volume = Math.min(1, AUDIO.missionBackground);
 }
 
 function playTone(type, start, duration, frequency, volume = 0.12) {
@@ -840,7 +847,7 @@ function startCelebrationPops() {
 }
 
 async function startCelebrationAudio() {
-  const musicPlayed = await playAudioFile(celebrationMusicAudio, CELEBRATION_MUSIC_VOLUME);
+  const musicPlayed = await playAudioFile(celebrationMusicAudio, AUDIO.celebration);
   if (!musicPlayed) {
     startCelebrationPops();
   }
@@ -927,8 +934,8 @@ function showCelebrationScreen() {
 
 async function playDestructSequence() {
   // Lower BGM during self-destruct for clarity.
-  backgroundAudio.volume = 0.12;
-  const played = await playAudioFile(destructionAudio, 0.95);
+  backgroundAudio.volume = AUDIO.missionBackgroundDuringDestruct;
+  const played = await playAudioFile(destructionAudio, AUDIO.destructionSfx);
   if (played) {
     return;
   }

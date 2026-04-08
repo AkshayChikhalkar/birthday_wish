@@ -1,3 +1,7 @@
+/**
+ * Not loaded by index.html — the app uses `profiles/*.json` + `script.js` (see `AUDIO` for mix levels).
+ * Kept as an optional reference / manual embed; keep `narrationFile` in sync with your profile if you use this.
+ */
 window.MISSION_METADATA = {
   recipientName: "Samiksha Gharad",
   agentName: "Sami",
@@ -24,7 +28,7 @@ window.MISSION_METADATA = {
   countdownSeconds: 12,
   countdownBeepFromSeconds: 10,
   messageStartDelayMs: 2500,
-  narrationFile: "./assets/narration.mp3",
+  narrationFile: "./assets/narration/narration-default.mp3",
   narrationVoice: "en-US-ChristopherNeural",
   narrationRate: "-5%",
   closingLine: "Good luck, Agent."
