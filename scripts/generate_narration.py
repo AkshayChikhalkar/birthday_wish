@@ -1,5 +1,6 @@
 import json
 import pathlib
+import re
 import sys
 
 try:
@@ -73,13 +74,23 @@ def format_ordinal(value: int) -> str:
 def build_message(profile: dict) -> str:
     recipient = require_string_value(profile, "recipientName")
     agent = parse_string_value(profile, "agentName", recipient) or recipient
-    greeting = require_string_value(profile, "greeting")
-    intro = require_string_value(profile, "introLine")
-    year_prefix = require_string_value(profile, "yearLinePrefix")
-    objectives_heading = require_string_value(profile, "objectivesHeading")
-    acceptance = require_string_value(profile, "acceptanceLine")
-    self_destruct_template = require_string_value(profile, "selfDestructLineTemplate")
-    closing = require_string_value(profile, "closingLine")
+    greeting = parse_string_value(profile, "greeting", "Good evening")
+    intro = parse_string_value(
+        profile, "introLine", "Your next assignment has been delivered with full birthday-level priority."
+    )
+    year_prefix = parse_string_value(
+        profile, "yearLinePrefix", "As of this moment, you are officially entering Year"
+    )
+    objectives_heading = parse_string_value(profile, "objectivesHeading", "Mission objectives:")
+    acceptance = parse_string_value(
+        profile,
+        "acceptanceLine",
+        "If you choose to accept this mission, your {ageOrdinal} year will be your boldest one yet.",
+    )
+    self_destruct_template = parse_string_value(
+        profile, "selfDestructLineTemplate", "This message will self-destruct in {seconds} seconds."
+    )
+    closing = parse_string_value(profile, "closingLine", "Good luck, Agent.")
     dob = require_string_value(profile, "recipientDob")
     age = parse_age(dob)
     entering_year = age + 1

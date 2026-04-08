@@ -28,5 +28,6 @@
   "narrationRate": "-5%",
   "backgroundVolume": 0.4,
   "celebrationMusicVolume": 0.45,
-  "celebrationCheerVolume": 0.8
+  "celebrationCheerVolume": 0.8,
+  "closingLine": "Good luck, Agent."
 }
