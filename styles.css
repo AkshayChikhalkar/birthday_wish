@@ -95,25 +95,6 @@ button {
   pointer-events: none;
 }
 
-.sound-unlock-btn {
-  margin-top: 14px;
-  width: 100%;
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: 1px solid rgba(96, 241, 179, 0.45);
-  background: rgba(12, 32, 28, 0.85);
-  color: var(--text-dim);
-  cursor: pointer;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.sound-unlock-btn:hover {
-  border-color: rgba(96, 241, 179, 0.75);
-  box-shadow: var(--glow);
-}
-
 .profile-screen {
   position: fixed;
   inset: 0;

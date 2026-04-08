@@ -7,7 +7,6 @@ const authBtnEl = document.getElementById("authBtn");
 const authStatusEl = document.getElementById("authStatus");
 const authProgressEl = document.getElementById("authProgress");
 const authProgressFillEl = document.getElementById("authProgressFill");
-const soundUnlockBtnEl = document.getElementById("soundUnlockBtn");
 const profileScreenEl = document.getElementById("profileScreen");
 const profileCardEl = document.getElementById("profileCard");
 const profilePhotoEl = document.getElementById("profilePhoto");
@@ -417,28 +416,7 @@ function tryStartStartupMusic() {
   startupAudio.muted = false;
   const playPromise = startupAudio.play();
   if (playPromise && typeof playPromise.then === "function") {
-    playPromise
-      .then(() => {
-        soundUnlockBtnEl?.classList.add("hidden");
-      })
-      .catch(() => {});
-  }
-}
-
-/** Browsers often block the first audible play() until a gesture; used only by ENABLE SOUND. */
-function ensureStartupAudibleFromUserGesture() {
-  if (isAuthenticated) {
-    return;
-  }
-  startupAudio.muted = false;
-  startupAudio.volume = STARTUP_VOLUME;
-  const playPromise = startupAudio.play();
-  if (playPromise && typeof playPromise.catch === "function") {
-    playPromise
-      .then(() => {
-        soundUnlockBtnEl?.classList.add("hidden");
-      })
-      .catch(() => {});
+    playPromise.catch(() => {});
   }
 }
 
@@ -455,19 +433,6 @@ function scheduleStartupAutoplayRetries() {
       }
     }, ms);
   }
-}
-
-function scheduleSoundUnlockHint() {
-  soundUnlockBtnEl?.classList.add("hidden");
-  setTimeout(() => {
-    if (isAuthenticated || !soundUnlockBtnEl) {
-      return;
-    }
-    if (!startupAudio.paused) {
-      return;
-    }
-    soundUnlockBtnEl.classList.remove("hidden");
-  }, 2200);
 }
 
 /** Volume dip between auth and profile — same track, continuous playback. */
@@ -530,7 +495,6 @@ async function runAuthSequence() {
   authBtnEl.disabled = true;
   authPasswordInputEl.disabled = true;
   authPasswordInputEl.blur();
-  soundUnlockBtnEl?.classList.add("hidden");
   await unlockAudioIfNeeded();
   if (startupAudio.paused) {
     tryStartStartupMusic();
@@ -1052,12 +1016,6 @@ authPasswordInputEl.addEventListener("keydown", (event) => {
     runAuthSequence();
   }
 });
-if (soundUnlockBtnEl) {
-  soundUnlockBtnEl.addEventListener("click", () => {
-    ensureStartupAudibleFromUserGesture();
-    soundUnlockBtnEl.classList.add("hidden");
-  });
-}
 initVoices();
 if ("speechSynthesis" in window) {
   window.speechSynthesis.onvoiceschanged = initVoices;
@@ -1076,7 +1034,6 @@ window.addEventListener("pageshow", (event) => {
   if (event.persisted) {
     tryStartStartupMusic();
     scheduleStartupAutoplayRetries();
-    scheduleSoundUnlockHint();
   }
 });
 
@@ -1109,7 +1066,6 @@ async function bootApp() {
   );
   tryStartStartupMusic();
   scheduleStartupAutoplayRetries();
-  scheduleSoundUnlockHint();
 }
 
 bootApp().catch(() => {
