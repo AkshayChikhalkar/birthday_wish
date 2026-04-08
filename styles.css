@@ -18,6 +18,7 @@ body {
   margin: 0;
   width: 100%;
   min-height: 100%;
+  min-height: 100dvh;
   font-family: "Share Tech Mono", monospace;
   background: radial-gradient(circle at top, #111e2f 0, var(--bg) 58%);
   color: var(--text);
@@ -290,6 +291,7 @@ body {
   color: var(--text);
   border-radius: 6px;
   font-family: inherit;
+  font-size: 16px;
 }
 
 .auth-card input[readonly] {

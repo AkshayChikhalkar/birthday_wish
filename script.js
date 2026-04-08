@@ -49,11 +49,13 @@ let celebrationPopHandle = null;
 let destructSoundStarted = false;
 let isAuthenticated = false;
 let missionAbortRequested = false;
+let audioUnlocked = false;
 
 const destructionAudio = new Audio("./assets/distruction.mp3");
 const backgroundAudio = new Audio("./assets/background.mp3");
 const celebrationMusicAudio = new Audio("./assets/happy-birthday.mp3");
 const config = window.MISSION_METADATA || {};
+const narrationAudio = new Audio(config.narrationFile || "./assets/narration.mp3");
 const BACKGROUND_VOLUME = Number(config.backgroundVolume) || 0.4;
 const MESSAGE_START_DELAY_MS = Number(config.messageStartDelayMs) || 4000;
 const MESSAGE_LIFETIME = Number(config.countdownSeconds) || 12;
@@ -62,16 +64,20 @@ const CELEBRATION_MUSIC_VOLUME = Number(config.celebrationMusicVolume) || 0.45;
 destructionAudio.preload = "auto";
 backgroundAudio.preload = "auto";
 celebrationMusicAudio.preload = "auto";
+narrationAudio.preload = "auto";
 backgroundAudio.loop = true;
 backgroundAudio.volume = BACKGROUND_VOLUME;
 backgroundAudio.muted = false;
 celebrationMusicAudio.loop = true;
 celebrationMusicAudio.volume = CELEBRATION_MUSIC_VOLUME;
+narrationAudio.loop = false;
+narrationAudio.volume = 1;
 
 // Proactively load audio buffers to reduce first-play latency.
 destructionAudio.load();
 backgroundAudio.load();
 celebrationMusicAudio.load();
+narrationAudio.load();
 
 function resizeCanvas() {
   smokeCanvas.width = window.innerWidth;
@@ -249,6 +255,8 @@ async function runAuthSequence() {
 
   authBtnEl.disabled = true;
   authPasswordInputEl.disabled = true;
+  authPasswordInputEl.blur();
+  await unlockAudioIfNeeded();
   authStatusEl.classList.remove("error");
   authStatusEl.classList.add("loading");
   authStatusEl.textContent = "VERIFYING CREDENTIALS...";
@@ -270,6 +278,8 @@ function safeStopSpeech() {
   if ("speechSynthesis" in window) {
     window.speechSynthesis.cancel();
   }
+  narrationAudio.pause();
+  narrationAudio.currentTime = 0;
   speechUtterance = null;
 }
 
@@ -319,6 +329,24 @@ function initVoices() {
 }
 
 function speakMessage(text) {
+  if (narrationAudio.currentSrc || narrationAudio.src) {
+    playAudioFile(narrationAudio, 1).then((played) => {
+      if (!played && "speechSynthesis" in window) {
+        safeStopSpeech();
+        const utterance = new SpeechSynthesisUtterance(text.replace(/\n/g, " "));
+        const selected = getPreferredVoice();
+        if (selected) {
+          utterance.voice = selected;
+        }
+        utterance.rate = 0.84;
+        utterance.pitch = 0.9;
+        utterance.volume = 1;
+        speechUtterance = utterance;
+        window.speechSynthesis.speak(utterance);
+      }
+    });
+    return;
+  }
   if (!("speechSynthesis" in window)) {
     return;
   }
@@ -343,6 +371,8 @@ function stopMediaAudio() {
   backgroundAudio.volume = BACKGROUND_VOLUME;
   celebrationMusicAudio.pause();
   celebrationMusicAudio.currentTime = 0;
+  narrationAudio.pause();
+  narrationAudio.currentTime = 0;
   if (celebrationPopHandle) {
     clearInterval(celebrationPopHandle);
     celebrationPopHandle = null;
@@ -366,6 +396,36 @@ async function startBackgroundAudio() {
   backgroundAudio.currentTime = 0;
   backgroundAudio.volume = BACKGROUND_VOLUME;
   return playAudioFile(backgroundAudio, BACKGROUND_VOLUME);
+}
+
+async function unlockAudioIfNeeded() {
+  if (audioUnlocked) {
+    return;
+  }
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (AudioCtx) {
+    const audioCtx = playTone.audioCtx || new AudioCtx();
+    playTone.audioCtx = audioCtx;
+    if (audioCtx.state === "suspended") {
+      await audioCtx.resume().catch(() => {});
+    }
+  }
+  const unlockTargets = [destructionAudio, backgroundAudio, celebrationMusicAudio, narrationAudio];
+  await Promise.all(
+    unlockTargets.map(async (audioEl) => {
+      try {
+        audioEl.muted = true;
+        await audioEl.play();
+      } catch (_error) {
+        // Ignore here; real playback has its own fallback logic.
+      } finally {
+        audioEl.pause();
+        audioEl.currentTime = 0;
+        audioEl.muted = false;
+      }
+    })
+  );
+  audioUnlocked = true;
 }
 
 async function fadeOutBackgroundAudio(durationMs = 1300) {

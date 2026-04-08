@@ -1,7 +1,7 @@
 window.MISSION_METADATA = {
-  recipientName: "Samiksha Gharad",
-  agentName: "Sami",
-  recipientDob: "06-04-1995",
+  recipientName: "Sarah Troll",
+  agentName: "Trolli",
+  recipientDob: "12-04-2000",
   profilePhoto: "./assets/profile.jpg",
   clearanceLevel: "OMEGA-7",
   agentStatus: "ACTIVE",
@@ -22,6 +22,7 @@ window.MISSION_METADATA = {
   countdownSeconds: 12,
   countdownBeepFromSeconds: 10,
   messageStartDelayMs: 2500,
+  narrationFile: "./assets/narration.mp3",
   celebrationMusicVolume: 0.45,
   celebrationCheerVolume: 0.8,
   closingLine: "Good luck, Agent."
