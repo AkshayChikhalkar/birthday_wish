@@ -10,13 +10,13 @@
   "speciality": "SOCIAL OPS / JOY ENGINEERING",
   "favoriteIntel": "Double chocolate, low evidence",
   "greeting": "Good evening",
-  "introLine": "Your next assignment has been delivered with full birthday-level priority.",
-  "yearLinePrefix": "As of this moment, you are officially entering Year",
+"introLine": "Attention Agent: birthday protocol engaged. Serious behavior is no longer authorized.",
+"yearLinePrefix": "As of this moment, you are officially entering Year {ageOrdinal}",
   "objectivesHeading": "Mission objectives:",
   "objectives": [
-  "Celebrate with style, charm, and dramatic flair.",
-  "Receive cake, hugs, and highly classified good wishes.",
-  "Enhance happiness, confidence, and heroic birthday momentum."
+  "Accept every compliment like a trained professional.",
+  "Infiltrate the party, extract dessert, leave no crumbs.",
+  "Upgrade happiness to levels that concern your enemies."
   ],
   "acceptanceLine": "If you choose to accept this mission, your {ageOrdinal} year will be your boldest one yet.",
   "selfDestructLineTemplate": "This message will self-destruct in {seconds} seconds.",
