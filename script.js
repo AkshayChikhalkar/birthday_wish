@@ -54,13 +54,16 @@ let missionAbortRequested = false;
 let audioUnlocked = false;
 let currentProfileSlug = "default";
 const preloadedImageRefs = [];
+let startupAutoplayFallbackBound = false;
 
 const destructionAudio = new Audio("./assets/distruction.mp3");
 const backgroundAudio = new Audio("./assets/background.mp3");
 const celebrationMusicAudio = new Audio("./assets/happy-birthday.mp3");
+const startupAudio = new Audio("./assets/startup.mp3");
 let config = {};
 const narrationAudio = new Audio("./assets/narration/narration-default.mp3");
 let BACKGROUND_VOLUME = 0.4;
+let STARTUP_VOLUME = 0.38;
 let MESSAGE_START_DELAY_MS = 4000;
 let MESSAGE_LIFETIME = 12;
 let COUNTDOWN_BEEP_FROM = 10;
@@ -68,12 +71,15 @@ let CELEBRATION_MUSIC_VOLUME = 0.45;
 destructionAudio.preload = "auto";
 backgroundAudio.preload = "auto";
 celebrationMusicAudio.preload = "auto";
+startupAudio.preload = "auto";
 narrationAudio.preload = "auto";
 backgroundAudio.loop = true;
 backgroundAudio.volume = BACKGROUND_VOLUME;
 backgroundAudio.muted = false;
 celebrationMusicAudio.loop = true;
 celebrationMusicAudio.volume = CELEBRATION_MUSIC_VOLUME;
+startupAudio.loop = true;
+startupAudio.volume = STARTUP_VOLUME;
 narrationAudio.loop = false;
 narrationAudio.volume = 1;
 
@@ -81,6 +87,7 @@ narrationAudio.volume = 1;
 destructionAudio.load();
 backgroundAudio.load();
 celebrationMusicAudio.load();
+startupAudio.load();
 narrationAudio.load();
 
 function preloadAuthPageAssets() {
@@ -130,6 +137,8 @@ function applyRuntimeConfig() {
   MESSAGE_LIFETIME = Number(config.countdownSeconds) || 12;
   COUNTDOWN_BEEP_FROM = Number(config.countdownBeepFromSeconds) || 10;
   CELEBRATION_MUSIC_VOLUME = Number(config.celebrationMusicVolume) || 0.45;
+  const configuredStartupVol = Number(config.startupVolume);
+  STARTUP_VOLUME = Number.isFinite(configuredStartupVol) ? configuredStartupVol : 0.38;
 
   const narrationFile = String(config.narrationFile || "./assets/narration/narration-default.mp3");
   if (narrationAudio.src !== new URL(narrationFile, window.location.href).href) {
@@ -141,16 +150,20 @@ function applyRuntimeConfig() {
   backgroundAudio.muted = false;
   celebrationMusicAudio.loop = true;
   celebrationMusicAudio.volume = CELEBRATION_MUSIC_VOLUME;
+  startupAudio.loop = true;
+  startupAudio.volume = STARTUP_VOLUME;
   narrationAudio.loop = false;
   narrationAudio.volume = 1;
   destructionAudio.preload = "auto";
   backgroundAudio.preload = "auto";
   celebrationMusicAudio.preload = "auto";
+  startupAudio.preload = "auto";
   narrationAudio.preload = "auto";
 
   destructionAudio.load();
   backgroundAudio.load();
   celebrationMusicAudio.load();
+  startupAudio.load();
   narrationAudio.load();
 }
 
@@ -325,7 +338,63 @@ function showProfileScreen() {
   profileScreenEl.classList.remove("hidden");
 }
 
-function openMissionTerminal() {
+function tryStartStartupMusic() {
+  startupAudio.volume = STARTUP_VOLUME;
+  const playPromise = startupAudio.play();
+  if (playPromise && typeof playPromise.catch === "function") {
+    playPromise.catch(() => {});
+  }
+}
+
+function bindStartupMusicAutoplayFallback() {
+  if (startupAutoplayFallbackBound) {
+    return;
+  }
+  startupAutoplayFallbackBound = true;
+  const onFirstInteraction = () => {
+    if (startupAudio.paused && !isAuthenticated) {
+      tryStartStartupMusic();
+    }
+  };
+  authScreenEl.addEventListener("pointerdown", onFirstInteraction, { once: true });
+  authScreenEl.addEventListener("keydown", onFirstInteraction, { once: true });
+}
+
+/** Volume dip between auth and profile — same track, continuous playback. */
+async function startupAuthToProfileTransition() {
+  if (startupAudio.paused) {
+    return;
+  }
+  const base = startupAudio.volume || STARTUP_VOLUME;
+  const low = base * 0.06;
+  const steps = 5;
+  for (let i = 0; i < steps; i += 1) {
+    startupAudio.volume = base - ((base - low) * (i + 1)) / steps;
+    await wait(30);
+  }
+  await wait(55);
+  for (let i = 0; i < steps; i += 1) {
+    startupAudio.volume = low + ((base - low) * (i + 1)) / steps;
+    await wait(30);
+  }
+  startupAudio.volume = base;
+}
+
+async function fadeOutStartupAudio(durationMs = 700) {
+  const steps = 14;
+  const initial = startupAudio.volume || STARTUP_VOLUME;
+  for (let step = 0; step < steps; step += 1) {
+    const ratio = 1 - (step + 1) / steps;
+    startupAudio.volume = Math.max(initial * ratio, 0);
+    await wait(durationMs / steps);
+  }
+  startupAudio.pause();
+  startupAudio.currentTime = 0;
+  startupAudio.volume = STARTUP_VOLUME;
+}
+
+async function openMissionTerminal() {
+  await fadeOutStartupAudio(650);
   profileScreenEl.classList.add("hidden");
   appEl.classList.remove("pre-auth");
   runMission();
@@ -352,6 +421,7 @@ async function runAuthSequence() {
   authPasswordInputEl.disabled = true;
   authPasswordInputEl.blur();
   await unlockAudioIfNeeded();
+  tryStartStartupMusic();
   authStatusEl.classList.remove("error");
   authStatusEl.classList.add("loading");
   authStatusEl.textContent = "VERIFYING CREDENTIALS...";
@@ -365,6 +435,7 @@ async function runAuthSequence() {
   authStatusEl.classList.remove("loading");
   authStatusEl.textContent = "AUTHENTICATED. SECURE CHANNEL OPEN.";
   isAuthenticated = true;
+  await startupAuthToProfileTransition();
   authScreenEl.classList.add("hidden");
   showProfileScreen();
 }
@@ -464,6 +535,9 @@ function stopMediaAudio() {
   backgroundAudio.pause();
   backgroundAudio.currentTime = 0;
   backgroundAudio.volume = BACKGROUND_VOLUME;
+  startupAudio.pause();
+  startupAudio.currentTime = 0;
+  startupAudio.volume = STARTUP_VOLUME;
   celebrationMusicAudio.pause();
   celebrationMusicAudio.currentTime = 0;
   narrationAudio.pause();
@@ -505,7 +579,7 @@ async function unlockAudioIfNeeded() {
       await audioCtx.resume().catch(() => {});
     }
   }
-  const unlockTargets = [destructionAudio, backgroundAudio, celebrationMusicAudio, narrationAudio];
+  const unlockTargets = [destructionAudio, backgroundAudio, celebrationMusicAudio, startupAudio, narrationAudio];
   await Promise.all(
     unlockTargets.map(async (audioEl) => {
       try {
@@ -893,6 +967,8 @@ async function bootApp() {
   authStatusEl.classList.remove("error");
   authStatusEl.textContent = "AWAITING CREDENTIALS...";
   preloadAuthPageAssets();
+  tryStartStartupMusic();
+  bindStartupMusicAutoplayFallback();
 }
 
 bootApp().catch(() => {
