@@ -980,14 +980,23 @@ hr {
   line-height: 1.25;
   letter-spacing: 0.4px;
   color: #ffffff;
-  text-shadow: 0 0 20px rgba(255, 255, 255, 0.28);
+  text-shadow: 0 0 24px rgba(255, 255, 255, 0.4);
   font-family: "Montserrat", sans-serif;
   font-weight: 700;
   white-space: pre-line;
   opacity: 0;
   transform: translateY(16px) scale(0.96);
-  background: linear-gradient(90deg, #ffffff 0%, #ffe3aa 28%, #ffffff 56%, #bdf9ff 78%, #ffffff 100%);
-  background-size: 260% 100%;
+  background: linear-gradient(
+    90deg,
+    #fff2bd 0%,
+    #ff9f43 18%,
+    #ff5f6d 36%,
+    #ffd166 54%,
+    #7be0ff 74%,
+    #b690ff 88%,
+    #fff2bd 100%
+  );
+  background-size: 320% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -1011,7 +1020,7 @@ hr {
     celebrationEnterTitle 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.25s,
     birthdayGlow 2.4s ease-in-out infinite 1.2s,
     birthdayFloat 4.2s ease-in-out infinite 1.2s,
-    birthdayShimmer 3.2s linear infinite 1.2s;
+    birthdayShimmer 2.4s linear infinite 1.2s;
 }
 
 .celebration.visible #celebrationSubtext {
@@ -1086,10 +1095,16 @@ hr {
 @keyframes birthdayGlow {
   0%,
   100% {
-    text-shadow: 0 0 14px rgba(255, 255, 255, 0.26), 0 0 22px rgba(255, 196, 97, 0.2);
+    text-shadow:
+      0 0 18px rgba(255, 255, 255, 0.32),
+      0 0 28px rgba(255, 120, 120, 0.28),
+      0 0 38px rgba(255, 196, 97, 0.26);
   }
   50% {
-    text-shadow: 0 0 22px rgba(255, 255, 255, 0.42), 0 0 34px rgba(255, 196, 97, 0.35);
+    text-shadow:
+      0 0 28px rgba(255, 255, 255, 0.5),
+      0 0 42px rgba(255, 95, 109, 0.38),
+      0 0 56px rgba(123, 224, 255, 0.32);
   }
 }
 

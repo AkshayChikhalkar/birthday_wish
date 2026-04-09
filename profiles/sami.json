@@ -51,7 +51,7 @@
   ],
   "acceptanceLine": "If you choose to accept this mission, your {ageOrdinal} year will be your boldest one yet.",
   "selfDestructLineTemplate": "This message will self-destruct in {seconds} seconds.",
-  "countdownSeconds": 12,
+  "countdownSeconds": 5,
   "countdownBeepFromSeconds": 10,
   "messageStartDelayMs": 2500,
   "narrationFile": "./assets/narration/narration-sami.mp3",

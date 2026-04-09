@@ -53,6 +53,7 @@ let missionAbortRequested = false;
 let audioUnlocked = false;
 let currentProfileSlug = "default";
 const preloadedImageRefs = [];
+const preloadedAudioRefs = [];
 /** When true, inline HTML retry kicks + deferred retries must not call play() (avoids double audio during auth). */
 let startupAutoplayRetryIds = [];
 /** Clears document-level listeners for “tap anywhere to start” startup audio. */
@@ -154,6 +155,34 @@ function preloadAuthPageAssets() {
     img.src = src;
     preloadedImageRefs.push(img);
   }
+}
+
+function preloadWelcomeStageAssets() {
+  preloadAuthPageAssets();
+
+  const narrationPath = String(config.narrationFile || "./assets/narration/narration-default.mp3");
+  const warmAudioSource = (src) => {
+    const a = new Audio(src);
+    a.preload = "auto";
+    a.load();
+    preloadedAudioRefs.push(a);
+  };
+
+  // Warm key audio files while welcome screen is visible.
+  for (const src of [narrationPath, "./assets/happy-birthday.mp3", "./assets/background.mp3"]) {
+    warmAudioSource(src);
+  }
+
+  // Encourage eager decode for profile image during the welcome phase.
+  const warmImageSource = (src) => {
+    const img = new Image();
+    img.decoding = "async";
+    img.fetchPriority = "high";
+    img.src = src;
+    img.decode?.().catch(() => {});
+    preloadedImageRefs.push(img);
+  };
+  warmImageSource(String(config.profilePhoto || `./assets/profile/profile-${currentProfileSlug}.jpg`));
 }
 
 function resizeCanvas() {
@@ -265,9 +294,10 @@ function getPreMissionDiagnostics() {
       ? config.preMissionDiagnostics
       : defaults;
   const normalized = pool.map((line) => String(line));
-  const count = Math.max(2, Math.min(3, normalized.length, 2 + Math.floor(Math.random() * 2)));
-  const shuffled = [...normalized].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
+  if (normalized.length >= 3) {
+    return normalized.slice(0, 3);
+  }
+  return defaults;
 }
 
 function getPasswordHint(attempts = authFailedAttempts) {
@@ -340,7 +370,7 @@ const EMBEDDED_PROFILE_DEFAULT = {
   ],
   acceptanceLine: "If you choose to accept this mission, your {ageOrdinal} year will be your boldest one yet.",
   selfDestructLineTemplate: "This message will self-destruct in {seconds} seconds.",
-  countdownSeconds: 12,
+  countdownSeconds: 5,
   countdownBeepFromSeconds: 10,
   messageStartDelayMs: 2500,
   narrationFile: "./assets/narration/narration-default.mp3",
@@ -790,15 +820,21 @@ function closeClassifiedModal() {
 
 async function playPreMissionDiagnostics() {
   const lines = getPreMissionDiagnostics();
-  const lineDelayMs = Number(config.preMissionLineDelayMs) || 620;
-  const holdAfterMs = Number(config.preMissionHoldMs) || 1600;
+  const initialDelayMs = Number(config.preMissionInitialDelayMs) || 1000;
+  const stepDelayMs = Number(config.preMissionStepDelayMs) || 1000;
+  const finalHoldMs = Number(config.preMissionFinalDelayMs) || 1500;
   missionTextEl.textContent = "";
-  for (const line of lines) {
+  await wait(initialDelayMs);
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
     missionTextEl.textContent += `${line}\n`;
     playTone("sine", 0, 0.03, 920 + Math.random() * 180, 0.018);
-    await wait(lineDelayMs);
+    if (i < lines.length - 1) {
+      await wait(stepDelayMs);
+    } else {
+      await wait(finalHoldMs);
+    }
   }
-  await wait(holdAfterMs);
 }
 
 function showProfileScreen() {
@@ -1221,10 +1257,9 @@ async function startCelebrationAudio() {
 
 function setupCelebrationMessage() {
   const celebrationAgentName = String(config.agentName || config.recipientName || "Agent");
-  const agentCode = getAgentCode();
   const enteringYear = getRecipientAge() + 1;
   celebrationTitleEl.textContent = `${getCelebrationTitle()}\n${celebrationAgentName}!`;
-  celebrationSubtextEl.textContent = `Agent ${agentCode}, welcome to your amazing ${formatOrdinal(
+  celebrationSubtextEl.textContent = `Agent ${celebrationAgentName}, welcome to your amazing ${formatOrdinal(
     enteringYear
   )} year. Celebrate big and enjoy every moment.`;
 }
@@ -1582,7 +1617,7 @@ async function bootApp() {
   }
   authStatusEl.classList.remove("error");
   authStatusEl.textContent = `AWAITING CREDENTIALS // ${agentCode}`;
-  preloadAuthPageAssets();
+  preloadWelcomeStageAssets();
   await playWelcomeSequence();
   bindStartupMusicOnFirstPageInteraction();
   startupAudio.addEventListener(

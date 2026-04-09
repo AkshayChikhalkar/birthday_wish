@@ -33,7 +33,8 @@
   "celebrationTitles": [
     "License to Party: Granted",
     "Operation Trolli Thunder",
-    "Mission Complete: Chaos and Cake"
+    "Mission Complete: Chaos and Cake",
+    "Happy Birthday"
   ],
   "preMissionDiagnostics": [
     "> checking dance floor integrity...",
@@ -51,7 +52,7 @@
   ],
   "acceptanceLine": "If you choose to accept this mission, your {ageOrdinal} year will be your boldest one yet.",
   "selfDestructLineTemplate": "This message will self-destruct in {seconds} seconds.",
-  "countdownSeconds": 12,
+  "countdownSeconds": 5,
   "countdownBeepFromSeconds": 10,
   "messageStartDelayMs": 2500,
   "narrationFile": "./assets/narration/narration-sarah-troll.mp3",
