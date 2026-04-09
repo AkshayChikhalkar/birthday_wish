@@ -58,12 +58,16 @@ const preloadedImageRefs = [];
 let startupAutoplayRetryIds = [];
 /** Clears document-level listeners for “tap anywhere to start” startup audio. */
 let removeStartupInteractionListeners = null;
+/** True while mission narration (file or TTS) should keep BGM ducked — survives resize/orientation. */
+let missionNarrationDuckActive = false;
 
 /**
  * Single source of truth for all mix levels and related timing — edit here only (not in profile JSON).
  */
 const AUDIO = {
   missionBackground: 0.2,
+  /** Narrow / touch UIs: quieter bed — phone speakers mask speech more than laptop drivers */
+  missionBackgroundMobile: 0.11,
   startup: 0.38,
   celebration: 0.45,
   narration: 1,
@@ -71,9 +75,10 @@ const AUDIO = {
   celebrationCheer: 0.8,
   /** Mission BGM while self-destruct SFX plays */
   missionBackgroundDuringDestruct: 0.12,
+  missionBackgroundDuringDestructMobile: 0.07,
   /** Narration duck: multiply mission BGM, then cap */
-  narrationDuckMobileFactor: 0.2,
-  narrationDuckMobileCap: 0.04,
+  narrationDuckMobileFactor: 0.14,
+  narrationDuckMobileCap: 0.022,
   narrationDuckDesktopFactor: 0.42,
   narrationDuckDesktopCap: 0.1,
   destructionSfx: 0.95,
@@ -121,8 +126,19 @@ celebrationMusicAudio.load();
 startupAudio.load();
 narrationAudio.load();
 
+function getMissionBackgroundBaseVolume() {
+  return Math.min(
+    1,
+    isMissionBackgroundMobileReduction() ? AUDIO.missionBackgroundMobile : AUDIO.missionBackground
+  );
+}
+
 function applyAudioLevelsToMediaElements() {
-  backgroundAudio.volume = Math.min(1, AUDIO.missionBackground);
+  if (missionNarrationDuckActive) {
+    applyNarrationDuckToBackground();
+  } else {
+    backgroundAudio.volume = getMissionBackgroundBaseVolume();
+  }
   celebrationMusicAudio.volume = AUDIO.celebration;
   startupAudio.volume = AUDIO.startup;
   narrationAudio.volume = AUDIO.narration;
@@ -237,16 +253,12 @@ function isMissionBackgroundMobileReduction() {
   );
 }
 
-function syncBackgroundVolumeFromConfig() {
-  backgroundAudio.volume = Math.min(1, AUDIO.missionBackground);
-}
-
-/** While narration plays, pull mission BGM down so voice is intelligible (especially on phones). */
-function duckBackgroundForNarration() {
+/** Applies current duck math using the same mobile/desktop rules (also used after resize). */
+function applyNarrationDuckToBackground() {
   if (backgroundAudio.paused) {
     return;
   }
-  const base = AUDIO.missionBackground;
+  const base = getMissionBackgroundBaseVolume();
   if (isMissionBackgroundMobileReduction()) {
     backgroundAudio.volume = Math.min(base * AUDIO.narrationDuckMobileFactor, AUDIO.narrationDuckMobileCap);
   } else {
@@ -254,7 +266,22 @@ function duckBackgroundForNarration() {
   }
 }
 
+function syncBackgroundVolumeFromConfig() {
+  if (missionNarrationDuckActive) {
+    applyNarrationDuckToBackground();
+    return;
+  }
+  backgroundAudio.volume = getMissionBackgroundBaseVolume();
+}
+
+/** While narration plays, pull mission BGM down so voice is intelligible (especially on phones). */
+function duckBackgroundForNarration() {
+  missionNarrationDuckActive = true;
+  applyNarrationDuckToBackground();
+}
+
 function restoreBackgroundAfterNarration() {
+  missionNarrationDuckActive = false;
   syncBackgroundVolumeFromConfig();
 }
 
@@ -726,11 +753,12 @@ function speakMessage(text) {
 }
 
 function stopMediaAudio() {
+  missionNarrationDuckActive = false;
   destructionAudio.pause();
   destructionAudio.currentTime = 0;
   backgroundAudio.pause();
   backgroundAudio.currentTime = 0;
-  backgroundAudio.volume = Math.min(1, AUDIO.missionBackground);
+  backgroundAudio.volume = getMissionBackgroundBaseVolume();
   startupAudio.pause();
   startupAudio.currentTime = 0;
   startupAudio.volume = AUDIO.startup;
@@ -759,7 +787,7 @@ function playAudioFile(audioEl, volume = 1) {
 
 async function startBackgroundAudio() {
   backgroundAudio.currentTime = 0;
-  const v = Math.min(1, AUDIO.missionBackground);
+  const v = getMissionBackgroundBaseVolume();
   backgroundAudio.volume = v;
   return playAudioFile(backgroundAudio, v);
 }
@@ -798,15 +826,16 @@ async function unlockAudioIfNeeded() {
 
 async function fadeOutBackgroundAudio(durationMs = 1300) {
   const steps = 12;
-  const initialVolume = backgroundAudio.volume || AUDIO.missionBackground;
+  const initialVolume = backgroundAudio.volume || getMissionBackgroundBaseVolume();
   for (let step = 0; step < steps; step += 1) {
     const ratio = 1 - (step + 1) / steps;
     backgroundAudio.volume = Math.max(initialVolume * ratio, 0);
     await wait(durationMs / steps);
   }
+  missionNarrationDuckActive = false;
   backgroundAudio.pause();
   backgroundAudio.currentTime = 0;
-  backgroundAudio.volume = Math.min(1, AUDIO.missionBackground);
+  backgroundAudio.volume = getMissionBackgroundBaseVolume();
 }
 
 function playTone(type, start, duration, frequency, volume = 0.12) {
@@ -932,7 +961,9 @@ function showCelebrationScreen() {
 
 async function playDestructSequence() {
   // Lower BGM during self-destruct for clarity.
-  backgroundAudio.volume = AUDIO.missionBackgroundDuringDestruct;
+  backgroundAudio.volume = isMissionBackgroundMobileReduction()
+    ? AUDIO.missionBackgroundDuringDestructMobile
+    : AUDIO.missionBackgroundDuringDestruct;
   const played = await playAudioFile(destructionAudio, AUDIO.destructionSfx);
   if (played) {
     return;
