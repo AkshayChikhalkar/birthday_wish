@@ -66,18 +66,14 @@ let missionNarrationDuckActive = false;
  */
 const AUDIO = {
   missionBackground: 0.4,
-  missionBackgroundMobile: 0.11,
-  startup: 0.38,
+  startup: 0.3,
   celebration: 0.45,
   narration: 1,
-  /** Reserved for future UI */
-  celebrationCheer: 0.8,
   /** Mission BGM while self-destruct SFX plays */
-  missionBackgroundDuringDestruct: 0.12,
-  missionBackgroundDuringDestructMobile: 0.07,
-  /** Narration duck (desktop / mouse): multiply mission BGM, then cap */
-  narrationDuckDesktopFactor: 0.42,
-  narrationDuckDesktopCap: 0.1,
+  missionBackgroundDuringDestruct: 0.26,
+  /** Narration duck for all devices: multiply mission BGM, then cap */
+  narrationDuckFactor: 0.42,
+  narrationDuckCap: 0.1,
   destructionSfx: 0.95,
   /** Auth → profile startup bed dip */
   startupDipMinRatio: 0.35,
@@ -124,10 +120,7 @@ startupAudio.load();
 narrationAudio.load();
 
 function getMissionBackgroundBaseVolume() {
-  if (!isMissionBackgroundMobileReduction()) {
-    return Math.min(1, AUDIO.missionBackground);
-  }
-  return Math.min(1, AUDIO.missionBackgroundMobile);
+  return Math.min(1, AUDIO.missionBackground);
 }
 
 function applyAudioLevelsToMediaElements() {
@@ -243,31 +236,13 @@ async function fetchProfileConfig(slug) {
   return cloneEmbeddedDefaultProfile();
 }
 
-/**
- * Phone / tablet / touch: wider than 768px matters — many phones in landscape exceed 768px and
- * were misclassified as “desktop”, skipping the stronger mobile mix.
- */
-function isMissionBackgroundMobileReduction() {
-  const narrow = window.matchMedia("(max-width: 1024px)").matches;
-  const coarse = window.matchMedia("(pointer: coarse)").matches;
-  const primaryTouch =
-    typeof navigator !== "undefined" &&
-    navigator.maxTouchPoints > 0 &&
-    window.matchMedia("(hover: none)").matches;
-  return narrow || coarse || primaryTouch;
-}
-
-/** Applies current duck math (also used after resize). Touch/narrow: silence BGM under narration — most reliable on phone speakers. */
+/** Applies current duck math (also used after resize). */
 function applyNarrationDuckToBackground() {
   if (backgroundAudio.paused) {
     return;
   }
-  if (isMissionBackgroundMobileReduction()) {
-    backgroundAudio.volume = 0;
-    return;
-  }
   const base = getMissionBackgroundBaseVolume();
-  backgroundAudio.volume = Math.min(base * AUDIO.narrationDuckDesktopFactor, AUDIO.narrationDuckDesktopCap);
+  backgroundAudio.volume = Math.min(base * AUDIO.narrationDuckFactor, AUDIO.narrationDuckCap);
 }
 
 function syncBackgroundVolumeFromConfig() {
@@ -278,7 +253,7 @@ function syncBackgroundVolumeFromConfig() {
   backgroundAudio.volume = getMissionBackgroundBaseVolume();
 }
 
-/** While narration plays, pull mission BGM down so voice is intelligible (especially on phones). */
+/** While narration plays, pull mission BGM down so voice is intelligible. */
 function duckBackgroundForNarration() {
   missionNarrationDuckActive = true;
   applyNarrationDuckToBackground();
@@ -965,9 +940,7 @@ function showCelebrationScreen() {
 
 async function playDestructSequence() {
   // Lower BGM during self-destruct for clarity.
-  backgroundAudio.volume = isMissionBackgroundMobileReduction()
-    ? AUDIO.missionBackgroundDuringDestructMobile
-    : AUDIO.missionBackgroundDuringDestruct;
+  backgroundAudio.volume = AUDIO.missionBackgroundDuringDestruct;
   const played = await playAudioFile(destructionAudio, AUDIO.destructionSfx);
   if (played) {
     return;
