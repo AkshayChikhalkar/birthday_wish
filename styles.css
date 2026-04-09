@@ -7,6 +7,7 @@
   --warn: #ff7f50;
   --danger: #ff3c3c;
   --glow: 0 0 14px rgba(57, 255, 20, 0.24);
+  --footer-space: 54px;
 }
 
 * {
@@ -35,7 +36,7 @@ button {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: 24px 24px calc(24px + var(--footer-space));
   position: relative;
   z-index: 2;
   transition: opacity 0.9s ease, transform 0.9s ease;
@@ -57,7 +58,7 @@ button {
   z-index: 7;
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: 24px 24px calc(24px + var(--footer-space));
   background: radial-gradient(circle at 50% 18%, rgba(25, 46, 71, 0.68), rgba(5, 9, 14, 0.95));
   transition: opacity 0.7s ease, visibility 0.7s ease;
 }
@@ -101,7 +102,7 @@ button {
   z-index: 7;
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: 24px 24px calc(24px + var(--footer-space));
   overflow-y: auto;
   background: radial-gradient(circle at 50% 12%, rgba(29, 67, 85, 0.52), rgba(6, 10, 15, 0.95));
   transition: opacity 0.65s ease, visibility 0.65s ease;
@@ -443,7 +444,7 @@ button {
 
 .terminal {
   width: min(980px, 100%);
-  height: calc(100vh - 48px);
+  height: calc(100dvh - 48px - var(--footer-space));
   border: 1px solid var(--panel-border);
   background: var(--panel);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65), inset 0 0 40px rgba(0, 255, 153, 0.06);
@@ -893,6 +894,10 @@ hr {
 }
 
 @media (max-width: 640px) {
+  :root {
+    --footer-space: 46px;
+  }
+
   .controls {
     grid-template-columns: 1fr;
   }
@@ -911,7 +916,7 @@ hr {
 
   .profile-screen {
     place-items: start center;
-    padding: 14px;
+    padding: 14px 14px calc(14px + var(--footer-space));
   }
 
   .profile-card {
