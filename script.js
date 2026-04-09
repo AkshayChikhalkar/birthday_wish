@@ -228,8 +228,11 @@ async function playWelcomeSequence() {
     welcomeSubtitleEl.textContent = `Welcome, ${recipient} (${agentCode}). ${defaultLine}`;
   }
 
+  // Keep welcome timing consistent on mobile refresh by counting visible time only.
+  welcomeScreenEl.classList.remove("hidden");
+  authScreenEl.classList.add("hidden");
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  await wait(prefersReducedMotion ? 900 : 4700);
+  await waitForVisibleDuration(prefersReducedMotion ? 900 : 4700);
 
   welcomeScreenEl.classList.add("hidden");
   authScreenEl.classList.remove("hidden");
@@ -577,6 +580,23 @@ async function typeText(text, speed = 60) {
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForVisibleDuration(ms) {
+  const targetMs = Math.max(Number(ms) || 0, 0);
+  if (targetMs === 0) {
+    return;
+  }
+  let accumulatedVisibleMs = 0;
+  let lastTick = performance.now();
+  while (accumulatedVisibleMs < targetMs) {
+    await wait(50);
+    const now = performance.now();
+    if (!document.hidden) {
+      accumulatedVisibleMs += now - lastTick;
+    }
+    lastTick = now;
+  }
 }
 
 function parseDobParts(dobValue) {
