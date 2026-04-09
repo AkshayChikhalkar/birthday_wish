@@ -74,8 +74,8 @@ const AUDIO = {
   /** Mission BGM while self-destruct SFX plays */
   missionBackgroundDuringDestruct: 0.26,
   /** Narration duck for all devices: multiply mission BGM, then cap */
-  narrationDuckFactor: 0.5,
-  narrationDuckCap: 0.16,
+  narrationDuckFactor: 0.8,
+  narrationDuckCap: 0.4,
   destructionSfx: 0.95,
   /** Auth → profile startup bed dip */
   startupDipMinRatio: 0.35,
