@@ -40,7 +40,7 @@
 
     <section class="auth-screen hidden" id="authScreen">
       <div class="auth-card">
-        <p class="auth-tag">IMF IDENTITY VERIFICATION</p>
+        <p class="auth-tag">IMF IDENTITY VERIFICATION // CODE <span id="authAgentCode">--</span></p>
         <h2>Secure Access Required</h2>
         <label for="authAgentInput">Agent Name</label>
         <input id="authAgentInput" type="text" readonly />
@@ -61,18 +61,7 @@
         </div>
         <div class="profile-main">
           <img id="profilePhoto" alt="Agent profile photo" />
-          <div class="profile-grid">
-            <p><span>Agent Alias</span><strong id="profileAgentAlias">--</strong></p>
-            <p><span>Name</span><strong id="profileName">--</strong></p>
-            <p><span>Date of Birth</span><strong id="profileDob">--</strong></p>
-            <p><span>Age</span><strong id="profileAge">--</strong></p>
-            <p><span>Address</span><strong id="profileAddress">UNKNOWN</strong></p>
-            <p><span>Last Seen</span><strong id="profileLastSeen">CLASSIFIED</strong></p>
-            <p><span>Speciality</span><strong id="profileSpeciality">SOCIAL OPS</strong></p>
-            <p><span>Clearance</span><strong id="profileClearance">OMEGA-7</strong></p>
-            <p><span>Status</span><strong id="profileStatus">ACTIVE</strong></p>
-            <p><span>Favorite Intel</span><strong id="profileFavoriteIntel">CAKE ACQUISITION</strong></p>
-          </div>
+          <div class="profile-grid" id="profileGrid"></div>
         </div>
         <button id="profileContinueBtn">PROCEED TO MISSION BRIEFING</button>
       </div>
@@ -93,7 +82,7 @@
             <span class="classified">TOP SECRET // EYES ONLY</span> | PRIORITY: MAXIMUM
           </p>
           <p class="meta">RECIPIENT: AGENT <span id="agentName">--</span></p>
-          <p class="meta">STATUS: SECURE LINK ESTABLISHED</p>
+          <p class="meta">STATUS: SECURE LINK ESTABLISHED // CODE <span id="terminalAgentCode">--</span></p>
           <hr />
 
           <pre id="missionText" class="mission-text"></pre>

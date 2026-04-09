@@ -3,6 +3,7 @@ const replayBtn = document.getElementById("replayBtn");
 const welcomeScreenEl = document.getElementById("welcomeScreen");
 const welcomeSubtitleEl = document.getElementById("welcomeSubtitle");
 const authScreenEl = document.getElementById("authScreen");
+const authAgentCodeEl = document.getElementById("authAgentCode");
 const authAgentInputEl = document.getElementById("authAgentInput");
 const authPasswordInputEl = document.getElementById("authPasswordInput");
 const authBtnEl = document.getElementById("authBtn");
@@ -12,16 +13,7 @@ const authProgressFillEl = document.getElementById("authProgressFill");
 const profileScreenEl = document.getElementById("profileScreen");
 const profileCardEl = document.getElementById("profileCard");
 const profilePhotoEl = document.getElementById("profilePhoto");
-const profileAgentAliasEl = document.getElementById("profileAgentAlias");
-const profileNameEl = document.getElementById("profileName");
-const profileDobEl = document.getElementById("profileDob");
-const profileAgeEl = document.getElementById("profileAge");
-const profileAddressEl = document.getElementById("profileAddress");
-const profileLastSeenEl = document.getElementById("profileLastSeen");
-const profileSpecialityEl = document.getElementById("profileSpeciality");
-const profileClearanceEl = document.getElementById("profileClearance");
-const profileStatusEl = document.getElementById("profileStatus");
-const profileFavoriteIntelEl = document.getElementById("profileFavoriteIntel");
+const profileGridEl = document.getElementById("profileGrid");
 const profileClassifiedLevelEl = document.getElementById("profileClassifiedLevel");
 const profileContinueBtnEl = document.getElementById("profileContinueBtn");
 const nameInput = document.getElementById("nameInput");
@@ -30,6 +22,7 @@ const countdownEl = document.getElementById("countdown");
 const finalTextEl = document.getElementById("finalText");
 const terminal = document.getElementById("terminal");
 const agentNameEl = document.getElementById("agentName");
+const terminalAgentCodeEl = document.getElementById("terminalAgentCode");
 const appEl = document.querySelector(".app");
 const celebrationScreenEl = document.getElementById("celebrationScreen");
 const celebrationTitleEl = document.getElementById("celebrationTitle");
@@ -190,8 +183,9 @@ async function playWelcomeSequence() {
 
   const defaultLine = "Calibrating encrypted access protocols...";
   const recipient = String(config.agentName || config.recipientName || "Agent");
+  const agentCode = getAgentCode();
   if (welcomeSubtitleEl) {
-    welcomeSubtitleEl.textContent = `Welcome, ${recipient}. ${defaultLine}`;
+    welcomeSubtitleEl.textContent = `Welcome, ${recipient} (${agentCode}). ${defaultLine}`;
   }
 
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -220,6 +214,10 @@ function canStartStartupMusic() {
   return welcomeSequenceDone || !welcomeScreenEl;
 }
 
+function getAgentCode() {
+  return String(config.agentCode || "X-000");
+}
+
 /**
  * Mirrors profiles/default.json — used when fetch() fails (e.g. opening index.html via file://).
  * Browsers block loading local JSON with fetch from file URLs; use a local HTTP server for full profiles.
@@ -231,10 +229,24 @@ const EMBEDDED_PROFILE_DEFAULT = {
   profilePhoto: "./assets/profile/profile-default.jpg",
   clearanceLevel: "OMEGA-7",
   agentStatus: "ACTIVE",
+  agentCode: "PHX-007",
   agentAddress: "UNKNOWN // SAFEHOUSE REDACTED",
   lastSeen: "Near cake storage, 22:14 IST",
   speciality: "SOCIAL OPS / JOY ENGINEERING",
   favoriteIntel: "Double chocolate, low evidence",
+  profileFields: [
+    { label: "Agent Alias", key: "agentAlias" },
+    { label: "Agent Code", key: "agentCode" },
+    { label: "Name", key: "name" },
+    { label: "Date of Birth", key: "dob" },
+    { label: "Age", key: "age" },
+    { label: "Address", key: "address" },
+    { label: "Last Seen", key: "lastSeen" },
+    { label: "Speciality", key: "speciality" },
+    { label: "Clearance", key: "clearance" },
+    { label: "Status", key: "status" },
+    { label: "Favorite Intel", key: "favoriteIntel" }
+  ],
   greeting: "Good evening",
   introLine: "Your next assignment has been delivered with full birthday-level priority.",
   yearLinePrefix: "As of this moment, you are officially entering Year",
@@ -505,28 +517,126 @@ function setupProfileData() {
   const dob = String(config.recipientDob || config.dob || "CLASSIFIED");
   const clearance = String(config.clearanceLevel || "OMEGA-7");
   const status = String(config.agentStatus || "ACTIVE");
+  const agentCode = getAgentCode();
   const address = String(config.agentAddress || "UNKNOWN // SAFEHOUSE REDACTED");
   const lastSeen = String(config.lastSeen || "UNKNOWN // TRACKING OFFLINE");
   const speciality = String(config.speciality || "SOCIAL OPS / JOY ENGINEERING");
   const favoriteIntel = String(config.favoriteIntel || "CAKE ACQUISITION");
   const photoPath = String(config.profilePhoto || `./assets/profile/profile-${currentProfileSlug}.jpg`);
+  const profileValueMap = {
+    agentAlias: alias,
+    alias,
+    name,
+    agentCode,
+    recipientName: name,
+    dob,
+    recipientDob: dob,
+    age,
+    address,
+    agentAddress: address,
+    lastSeen,
+    speciality,
+    clearance,
+    clearanceLevel: clearance,
+    status,
+    agentStatus: status,
+    favoriteIntel
+  };
 
-  profileAgentAliasEl.textContent = alias;
-  profileNameEl.textContent = name;
-  profileDobEl.textContent = dob;
-  profileAgeEl.textContent = age;
-  profileAddressEl.textContent = address;
-  profileLastSeenEl.textContent = lastSeen;
-  profileSpecialityEl.textContent = speciality;
-  profileClearanceEl.textContent = clearance;
-  profileStatusEl.textContent = status;
-  profileFavoriteIntelEl.textContent = favoriteIntel;
+  renderProfileFields(profileValueMap);
   profileClassifiedLevelEl.textContent = clearance;
   profilePhotoEl.onerror = () => {
     profilePhotoEl.onerror = null;
     profilePhotoEl.src = "./assets/profile/profile-default.jpg";
   };
   profilePhotoEl.src = photoPath;
+}
+
+function buildLegacyProfileFields() {
+  return [
+    { label: "Agent Alias", key: "agentAlias" },
+    { label: "Agent Code", key: "agentCode" },
+    { label: "Name", key: "name" },
+    { label: "Date of Birth", key: "dob" },
+    { label: "Age", key: "age" },
+    { label: "Address", key: "address" },
+    { label: "Last Seen", key: "lastSeen" },
+    { label: "Speciality", key: "speciality" },
+    { label: "Clearance", key: "clearance" },
+    { label: "Status", key: "status" },
+    { label: "Favorite Intel", key: "favoriteIntel" }
+  ];
+}
+
+function getConfiguredProfileFields() {
+  if (!Array.isArray(config.profileFields) || !config.profileFields.length) {
+    return buildLegacyProfileFields();
+  }
+
+  const normalized = config.profileFields
+    .map((field) => {
+      if (!field || typeof field !== "object") {
+        return null;
+      }
+      const label = String(field.label || "").trim();
+      if (!label) {
+        return null;
+      }
+      const key = field.key == null ? null : String(field.key).trim();
+      const value = field.value == null ? null : String(field.value);
+      return { label, key, value };
+    })
+    .filter(Boolean);
+
+  return normalized.length ? normalized : buildLegacyProfileFields();
+}
+
+function resolveProfileFieldValue(field, profileValueMap) {
+  if (field.key && Object.prototype.hasOwnProperty.call(profileValueMap, field.key)) {
+    const mapped = profileValueMap[field.key];
+    if (mapped != null && String(mapped).trim()) {
+      return String(mapped);
+    }
+  }
+
+  if (field.value != null && String(field.value).trim()) {
+    return String(field.value);
+  }
+
+  return "CLASSIFIED";
+}
+
+function getProfileValueLengthClass(value) {
+  const len = String(value || "").trim().length;
+  if (len >= 52) {
+    return "value-length-xl";
+  }
+  if (len >= 36) {
+    return "value-length-lg";
+  }
+  if (len >= 22) {
+    return "value-length-md";
+  }
+  return "value-length-sm";
+}
+
+function renderProfileFields(profileValueMap) {
+  if (!profileGridEl) {
+    return;
+  }
+  profileGridEl.textContent = "";
+
+  for (const field of getConfiguredProfileFields()) {
+    const item = document.createElement("p");
+    const labelEl = document.createElement("span");
+    const valueEl = document.createElement("strong");
+    const resolvedValue = resolveProfileFieldValue(field, profileValueMap);
+    labelEl.textContent = field.label;
+    valueEl.textContent = resolvedValue;
+    valueEl.classList.add(getProfileValueLengthClass(resolvedValue));
+    item.append(labelEl, valueEl);
+    profileGridEl.appendChild(item);
+  }
 }
 
 function showProfileScreen() {
@@ -679,7 +789,7 @@ async function runAuthSequence() {
   authPasswordInputEl.blur();
   authStatusEl.classList.remove("error");
   authStatusEl.classList.add("loading");
-  authStatusEl.textContent = "HANDSHAKE ACCEPTED. PREPARING SECURE CHECK...";
+  authStatusEl.textContent = `HANDSHAKE ACCEPTED FOR ${getAgentCode()}. PREPARING SECURE CHECK...`;
   await wait(AUTH_UI.clickDelayMs);
   suppressStartupAutoplayKicks();
   await unlockAudioIfNeeded();
@@ -695,7 +805,7 @@ async function runAuthSequence() {
   }
   await wait(AUTH_UI.postProgressHoldMs);
   authStatusEl.classList.remove("loading");
-  authStatusEl.textContent = "AUTHENTICATED. SECURE CHANNEL OPEN.";
+  authStatusEl.textContent = `AUTHENTICATED (${getAgentCode()}). SECURE CHANNEL OPEN.`;
   isAuthenticated = true;
   await startupAuthToProfileTransition();
   authScreenEl.classList.add("hidden");
@@ -940,9 +1050,12 @@ async function startCelebrationAudio() {
 
 function setupCelebrationMessage() {
   const celebrationAgentName = String(config.agentName || config.recipientName || "Agent");
+  const agentCode = getAgentCode();
   const enteringYear = getRecipientAge() + 1;
   celebrationTitleEl.textContent = `Happy Birthday,\n${celebrationAgentName}!`;
-  celebrationSubtextEl.textContent = `Welcome to your amazing ${formatOrdinal(enteringYear)} year. Celebrate big and enjoy every moment.`;
+  celebrationSubtextEl.textContent = `Agent ${agentCode}, welcome to your amazing ${formatOrdinal(
+    enteringYear
+  )} year. Celebrate big and enjoy every moment.`;
 }
 
 function getConfettiCount() {
@@ -1266,12 +1379,19 @@ async function bootApp() {
   }
   ageInput.value = String(getRecipientAge());
   const initialAgentName = config.agentName || config.recipientName || "AGENT";
+  const agentCode = getAgentCode();
   agentNameEl.textContent = String(initialAgentName).toUpperCase();
+  if (authAgentCodeEl) {
+    authAgentCodeEl.textContent = agentCode;
+  }
+  if (terminalAgentCodeEl) {
+    terminalAgentCodeEl.textContent = agentCode;
+  }
   authAgentInputEl.value = String(initialAgentName);
   authPasswordInputEl.disabled = false;
   authBtnEl.disabled = false;
   authStatusEl.classList.remove("error");
-  authStatusEl.textContent = "AWAITING CREDENTIALS...";
+  authStatusEl.textContent = `AWAITING CREDENTIALS // ${agentCode}`;
   preloadAuthPageAssets();
   await playWelcomeSequence();
   bindStartupMusicOnFirstPageInteraction();

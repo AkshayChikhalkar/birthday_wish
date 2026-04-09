@@ -347,6 +347,25 @@ button {
   font-size: 15px;
   font-family: "Montserrat", sans-serif;
   line-height: 1.2;
+  font-weight: 600;
+  transition: font-size 0.25s ease, font-weight 0.25s ease, line-height 0.25s ease;
+}
+
+.profile-grid strong.value-length-md {
+  font-size: 14px;
+  font-weight: 560;
+}
+
+.profile-grid strong.value-length-lg {
+  font-size: 13px;
+  font-weight: 540;
+  line-height: 1.3;
+}
+
+.profile-grid strong.value-length-xl {
+  font-size: 12px;
+  font-weight: 520;
+  line-height: 1.35;
 }
 
 .profile-grid p:nth-last-child(-n + 2) {
