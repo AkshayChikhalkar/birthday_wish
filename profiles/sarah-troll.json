@@ -37,11 +37,12 @@
     "ACCESS DENIED. Dessert access suspended until better password choices.",
     "ACCESS DENIED. Serious mode not found."
   ],
-  "celebrationTitles":
+  "celebrationTitles":[
     // "License to Party: Granted",
     // "Operation Trolli Thunder",
     // "Mission Complete: Chaos and Cake",
-    "Happy Birthday",
+    "Happy Birthday"
+  ],
   "preMissionDiagnostics": [
     "> checking dance floor integrity...",
     "> locating nearest dessert extraction route...",
