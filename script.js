@@ -68,7 +68,7 @@ let narrationDuckRestoreState = [];
  */
 const AUDIO = {
   missionBackground: 0.4,
-  startup: 0.3,
+  startup: 0.2,
   celebration: 0.45,
   narration: 1,
   /** Mission BGM while self-destruct SFX plays */
