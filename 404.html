@@ -15,8 +15,16 @@
         var knownAppFolder = "birthday_wish";
         var knownFolderIndex = segments.indexOf(knownAppFolder);
         var basePath = knownFolderIndex >= 0 ? "/" + segments.slice(0, knownFolderIndex + 1).join("/") + "/" : "/";
+        var trailingSegments = knownFolderIndex >= 0 ? segments.slice(knownFolderIndex + 1) : segments.slice();
+        var guessedSlug = trailingSegments.length ? trailingSegments[trailingSegments.length - 1] : "";
         var indexPath = basePath + "index.html";
-        var targetUrl = window.location.origin + indexPath + search + hash;
+        var params = new URLSearchParams(search);
+        var validSlug = /^[a-z0-9-]+$/.test(guessedSlug);
+        if (!params.get("p") && validSlug && guessedSlug !== "index" && guessedSlug !== "index.html" && guessedSlug !== "404" && guessedSlug !== "404.html") {
+          params.set("p", guessedSlug);
+        }
+        var query = params.toString();
+        var targetUrl = window.location.origin + indexPath + (query ? "?" + query : "") + hash;
 
         if (window.location.pathname !== indexPath) {
           window.location.replace(targetUrl);
