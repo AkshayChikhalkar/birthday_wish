@@ -66,6 +66,7 @@ let missionNarrationDuckActive = false;
 let narrationDuckRestoreState = [];
 let profilePhotoTapCount = 0;
 let profilePhotoTapTimer = null;
+let profileAgeTickerInterval = null;
 let authFailedAttempts = 0;
 
 /**
@@ -576,7 +577,7 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function calculateAgeFromDob(dobValue) {
+function parseDobParts(dobValue) {
   const dobRaw = String(dobValue || "").trim();
   if (!dobRaw) {
     return null;
@@ -601,6 +602,94 @@ function calculateAgeFromDob(dobValue) {
   if (!year || month < 1 || month > 12 || day < 1 || day > 31) {
     return null;
   }
+
+  // Reject impossible dates like 31-02-2000.
+  const validationDate = new Date(year, month - 1, day);
+  if (
+    validationDate.getFullYear() !== year ||
+    validationDate.getMonth() !== month - 1 ||
+    validationDate.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return { day, month, year };
+}
+
+function formatProfileAge(dobValue) {
+  const parsed = parseDobParts(dobValue);
+  if (!parsed) {
+    return `${getRecipientAge()}y`;
+  }
+
+  const { day, month, year } = parsed;
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const todayMonth = now.getMonth() + 1;
+  const todayDay = now.getDate();
+  const birthdayPassed =
+    todayMonth > month || (todayMonth === month && todayDay >= day);
+
+  const years = birthdayPassed ? currentYear - year : currentYear - year - 1;
+  const safeYears = Math.max(years, 0);
+  const lastBirthdayYear = birthdayPassed ? currentYear : currentYear - 1;
+  const lastBirthday = new Date(lastBirthdayYear, month - 1, day, 0, 0, 0, 0);
+  const elapsedMs = now.getTime() - lastBirthday.getTime();
+  const msInDay = 24 * 60 * 60 * 1000;
+  const msInHour = 60 * 60 * 1000;
+  const msInMinute = 60 * 1000;
+  const msInSecond = 1000;
+  const daysSinceBirthday = Math.max(
+    Math.floor(elapsedMs / msInDay),
+    0
+  );
+  const hoursRemainder = Math.max(
+    Math.floor((elapsedMs % msInDay) / msInHour),
+    0
+  );
+  const minutesRemainder = Math.max(
+    Math.floor((elapsedMs % msInHour) / msInMinute),
+    0
+  );
+  const secondsRemainder = Math.max(
+    Math.floor((elapsedMs % msInMinute) / msInSecond),
+    0
+  );
+  return `${safeYears}y ${daysSinceBirthday}d ${hoursRemainder}h ${minutesRemainder}m ${secondsRemainder}s`;
+}
+
+function stopProfileAgeTicker() {
+  if (profileAgeTickerInterval) {
+    clearInterval(profileAgeTickerInterval);
+    profileAgeTickerInterval = null;
+  }
+}
+
+function startProfileAgeTicker() {
+  stopProfileAgeTicker();
+  if (!profileGridEl) {
+    return;
+  }
+  const dobValue = config.recipientDob || config.dob;
+  const updateAgeFields = () => {
+    const ageEls = profileGridEl.querySelectorAll('[data-profile-key="age"]');
+    for (const ageEl of ageEls) {
+      const ageText = formatProfileAge(dobValue);
+      ageEl.textContent = ageText;
+      ageEl.classList.remove("value-length-sm", "value-length-md", "value-length-lg", "value-length-xl");
+      ageEl.classList.add(getProfileValueLengthClass(ageText));
+    }
+  };
+  updateAgeFields();
+  profileAgeTickerInterval = setInterval(updateAgeFields, 1000);
+}
+
+function calculateAgeFromDob(dobValue) {
+  const parsed = parseDobParts(dobValue);
+  if (!parsed) {
+    return null;
+  }
+  const { day, month, year } = parsed;
 
   const today = new Date();
   let age = today.getFullYear() - year;
@@ -640,8 +729,9 @@ function getExpectedPassword() {
 function setupProfileData() {
   const alias = String(config.agentName || config.recipientName || "Unknown");
   const name = String(config.recipientName || alias);
-  const age = String(getRecipientAge());
-  const birthdayRank = getBirthdayRank(Number(age));
+  const numericAge = getRecipientAge();
+  const age = formatProfileAge(config.recipientDob || config.dob);
+  const birthdayRank = getBirthdayRank(numericAge);
   const dob = String(config.recipientDob || config.dob || "CLASSIFIED");
   const clearance = String(config.clearanceLevel || "OMEGA-7");
   const status = String(config.agentStatus || "ACTIVE");
@@ -673,6 +763,7 @@ function setupProfileData() {
   };
 
   renderProfileFields(profileValueMap);
+  startProfileAgeTicker();
   profileClassifiedLevelEl.textContent = clearance;
   profilePhotoEl.onerror = () => {
     profilePhotoEl.onerror = null;
@@ -771,6 +862,9 @@ function renderProfileFields(profileValueMap) {
     const resolvedValue = resolveProfileFieldValue(field, profileValueMap);
     labelEl.textContent = field.label;
     valueEl.textContent = resolvedValue;
+    if (field.key) {
+      valueEl.dataset.profileKey = field.key;
+    }
     valueEl.classList.add(getProfileValueLengthClass(resolvedValue));
     if (field.key === "agentCode") {
       item.classList.add("field-agent-code");
@@ -960,6 +1054,7 @@ async function fadeOutStartupAudio(durationMs = 700) {
 }
 
 async function openMissionTerminal() {
+  stopProfileAgeTicker();
   await fadeOutStartupAudio(650);
   profileScreenEl.classList.add("hidden");
   appEl.classList.remove("pre-auth");
