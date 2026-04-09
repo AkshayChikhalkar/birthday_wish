@@ -9,6 +9,7 @@ const authPasswordInputEl = document.getElementById("authPasswordInput");
 const authPasswordHintEl = document.getElementById("authPasswordHint");
 const authBtnEl = document.getElementById("authBtn");
 const authStatusEl = document.getElementById("authStatus");
+const authCardEl = document.querySelector(".auth-card");
 const authProgressEl = document.getElementById("authProgress");
 const authProgressFillEl = document.getElementById("authProgressFill");
 const profileScreenEl = document.getElementById("profileScreen");
@@ -27,6 +28,7 @@ const finalTextEl = document.getElementById("finalText");
 const terminal = document.getElementById("terminal");
 const agentNameEl = document.getElementById("agentName");
 const terminalAgentCodeEl = document.getElementById("terminalAgentCode");
+const terminalAgeSinceBirthEl = document.getElementById("terminalAgeSinceBirth");
 const missionTimestampEl = document.getElementById("missionTimestamp");
 const appEl = document.querySelector(".app");
 const celebrationScreenEl = document.getElementById("celebrationScreen");
@@ -66,7 +68,7 @@ let missionNarrationDuckActive = false;
 let narrationDuckRestoreState = [];
 let profilePhotoTapCount = 0;
 let profilePhotoTapTimer = null;
-let profileAgeTickerInterval = null;
+let ageTickerInterval = null;
 let authFailedAttempts = 0;
 
 /**
@@ -658,30 +660,33 @@ function formatProfileAge(dobValue) {
   return `${safeYears}y ${daysSinceBirthday}d ${hoursRemainder}h ${minutesRemainder}m ${secondsRemainder}s`;
 }
 
-function stopProfileAgeTicker() {
-  if (profileAgeTickerInterval) {
-    clearInterval(profileAgeTickerInterval);
-    profileAgeTickerInterval = null;
+function stopAgeTicker() {
+  if (ageTickerInterval) {
+    clearInterval(ageTickerInterval);
+    ageTickerInterval = null;
   }
 }
 
-function startProfileAgeTicker() {
-  stopProfileAgeTicker();
-  if (!profileGridEl) {
-    return;
-  }
+function refreshAgeDisplays() {
   const dobValue = config.recipientDob || config.dob;
-  const updateAgeFields = () => {
+  const ageText = formatProfileAge(dobValue);
+  if (terminalAgeSinceBirthEl) {
+    terminalAgeSinceBirthEl.textContent = ageText;
+  }
+  if (profileGridEl) {
     const ageEls = profileGridEl.querySelectorAll('[data-profile-key="age"]');
     for (const ageEl of ageEls) {
-      const ageText = formatProfileAge(dobValue);
       ageEl.textContent = ageText;
       ageEl.classList.remove("value-length-sm", "value-length-md", "value-length-lg", "value-length-xl");
       ageEl.classList.add(getProfileValueLengthClass(ageText));
     }
-  };
-  updateAgeFields();
-  profileAgeTickerInterval = setInterval(updateAgeFields, 1000);
+  }
+}
+
+function startAgeTicker() {
+  stopAgeTicker();
+  refreshAgeDisplays();
+  ageTickerInterval = setInterval(refreshAgeDisplays, 1000);
 }
 
 function calculateAgeFromDob(dobValue) {
@@ -763,7 +768,7 @@ function setupProfileData() {
   };
 
   renderProfileFields(profileValueMap);
-  startProfileAgeTicker();
+  refreshAgeDisplays();
   profileClassifiedLevelEl.textContent = clearance;
   profilePhotoEl.onerror = () => {
     profilePhotoEl.onerror = null;
@@ -860,7 +865,7 @@ function renderProfileFields(profileValueMap) {
     const labelEl = document.createElement("span");
     const valueEl = document.createElement("strong");
     const resolvedValue = resolveProfileFieldValue(field, profileValueMap);
-    labelEl.textContent = field.label;
+    labelEl.textContent = field.key === "age" ? "Time Since Birth" : field.label;
     valueEl.textContent = resolvedValue;
     if (field.key) {
       valueEl.dataset.profileKey = field.key;
@@ -1054,11 +1059,38 @@ async function fadeOutStartupAudio(durationMs = 700) {
 }
 
 async function openMissionTerminal() {
-  stopProfileAgeTicker();
   await fadeOutStartupAudio(650);
   profileScreenEl.classList.add("hidden");
   appEl.classList.remove("pre-auth");
   runMission();
+}
+
+async function playAccessGrantedBurst() {
+  const code = getAgentCode();
+  authCardEl?.classList.remove("grant-burst");
+  void authCardEl?.offsetWidth;
+  authCardEl?.classList.add("grant-burst");
+  authAgentCodeEl?.classList.add("grant-flash");
+
+  if (authAgentCodeEl) {
+    let flashTick = 0;
+    const flashTimer = setInterval(() => {
+      flashTick += 1;
+      authAgentCodeEl.textContent = flashTick % 2 === 0 ? code : "ACCESS";
+      if (flashTick >= 8) {
+        clearInterval(flashTimer);
+        authAgentCodeEl.textContent = code;
+      }
+    }, 80);
+  }
+
+  authStatusEl.textContent = `ACCESS GRANTED // DECLASSIFYING ${code}`;
+  playTone("sawtooth", 0, 0.06, 760, 0.05);
+  playTone("square", 0.06, 0.06, 1220, 0.05);
+  playTone("triangle", 0.12, 0.07, 1640, 0.04);
+  await wait(720);
+  authAgentCodeEl?.classList.remove("grant-flash");
+  authCardEl?.classList.remove("grant-burst");
 }
 
 async function runAuthSequence() {
@@ -1110,9 +1142,64 @@ async function runAuthSequence() {
   await wait(650);
   authStatusEl.textContent = `AUTHENTICATED (${getAgentCode()}). SECURE CHANNEL OPEN.`;
   isAuthenticated = true;
+  await playAccessGrantedBurst();
   await startupAuthToProfileTransition();
   authScreenEl.classList.add("hidden");
   showProfileScreen();
+}
+
+function bindProfileCardParallax() {
+  if (!profileCardEl || profileCardEl.dataset.parallaxBound === "true") {
+    return;
+  }
+  profileCardEl.dataset.parallaxBound = "true";
+  const photoWrapEl = profilePhotoEl?.parentElement;
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (prefersReducedMotion) {
+    return;
+  }
+
+  const applyParallax = (clientX, clientY) => {
+    const rect = profileCardEl.getBoundingClientRect();
+    if (!rect.width || !rect.height) {
+      return;
+    }
+    const nx = (clientX - rect.left) / rect.width - 0.5;
+    const ny = (clientY - rect.top) / rect.height - 0.5;
+    const rotateY = Math.max(Math.min(nx * 10, 8), -8);
+    const rotateX = Math.max(Math.min(-ny * 8, 6), -6);
+    const photoShiftX = Math.max(Math.min(nx * 12, 8), -8);
+    const photoShiftY = Math.max(Math.min(ny * 10, 7), -7);
+    profileCardEl.style.setProperty("--profile-tilt-x", `${rotateX}deg`);
+    profileCardEl.style.setProperty("--profile-tilt-y", `${rotateY}deg`);
+    profileCardEl.style.setProperty("--profile-photo-shift-x", `${photoShiftX}px`);
+    profileCardEl.style.setProperty("--profile-photo-shift-y", `${photoShiftY}px`);
+    profileCardEl.classList.add("parallax-active");
+    photoWrapEl?.classList.add("shimmer-active");
+  };
+
+  const resetParallax = () => {
+    profileCardEl.style.setProperty("--profile-tilt-x", "0deg");
+    profileCardEl.style.setProperty("--profile-tilt-y", "0deg");
+    profileCardEl.style.setProperty("--profile-photo-shift-x", "0px");
+    profileCardEl.style.setProperty("--profile-photo-shift-y", "0px");
+    profileCardEl.classList.remove("parallax-active");
+    photoWrapEl?.classList.remove("shimmer-active");
+  };
+
+  profileCardEl.addEventListener("pointermove", (event) => applyParallax(event.clientX, event.clientY));
+  profileCardEl.addEventListener("pointerleave", resetParallax);
+  profileCardEl.addEventListener(
+    "touchmove",
+    (event) => {
+      const touch = event.touches?.[0];
+      if (touch) {
+        applyParallax(touch.clientX, touch.clientY);
+      }
+    },
+    { passive: true }
+  );
+  profileCardEl.addEventListener("touchend", resetParallax, { passive: true });
 }
 
 function safeStopSpeech() {
@@ -1727,6 +1814,8 @@ async function bootApp() {
   currentProfileSlug = requestedSlug;
   config = await fetchProfileConfig(requestedSlug);
   applyRuntimeConfig();
+  bindProfileCardParallax();
+  startAgeTicker();
 
   if (config.recipientName) {
     nameInput.value = String(config.recipientName);
