@@ -23,6 +23,21 @@
     { "label": "Status", "key": "status" },
     { "label": "Favorite Intel", "key": "favoriteIntel" }
   ],
+  "authDeniedMessages": [
+    "ACCESS DENIED. Nice try, Agent {agentName}.",
+    "ACCESS DENIED. Birthday firewall says: maybe nap first, hack later.",
+    "ACCESS DENIED. That password belongs in the blooper reel."
+  ],
+  "celebrationTitles": [
+    "Operation: Older & Bolder",
+    "Mission Accomplished, Agent Cakeforce",
+    "Top Secret: It Is Your Birthday"
+  ],
+  "preMissionDiagnostics": [
+    "> booting laughter engine...",
+    "> scanning pantry for birthday-grade cake...",
+    "> deploying emergency dessert protocol..."
+  ],
   "greeting": "Good evening",
   "introLine": "Your next assignment has been delivered with full birthday-level priority.",
   "yearLinePrefix": "As of this moment, you are officially entering Year",

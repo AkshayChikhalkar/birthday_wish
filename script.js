@@ -6,6 +6,7 @@ const authScreenEl = document.getElementById("authScreen");
 const authAgentCodeEl = document.getElementById("authAgentCode");
 const authAgentInputEl = document.getElementById("authAgentInput");
 const authPasswordInputEl = document.getElementById("authPasswordInput");
+const authPasswordHintEl = document.getElementById("authPasswordHint");
 const authBtnEl = document.getElementById("authBtn");
 const authStatusEl = document.getElementById("authStatus");
 const authProgressEl = document.getElementById("authProgress");
@@ -58,6 +59,9 @@ let removeStartupInteractionListeners = null;
 let missionNarrationDuckActive = false;
 /** Snapshot of currently active bed tracks so we can restore exactly after narration. */
 let narrationDuckRestoreState = [];
+let profilePhotoTapCount = 0;
+let profilePhotoTapTimer = null;
+let authFailedAttempts = 0;
 
 /**
  * Single source of truth for all mix levels and related timing — edit here only (not in profile JSON).
@@ -218,6 +222,65 @@ function getAgentCode() {
   return String(config.agentCode || "X-000");
 }
 
+function getAuthDeniedMessage() {
+  const agentName = String(config.agentName || config.recipientName || "Agent");
+  const defaults = [
+    "ACCESS DENIED. Nice try, Agent {agentName}.",
+    "ACCESS DENIED. That code belongs to the Department of Wrong Answers.",
+    "ACCESS DENIED. Mission failed successfully.",
+    "ACCESS DENIED. Keyboard confidence detected, password confidence missing."
+  ];
+  const pool =
+    Array.isArray(config.authDeniedMessages) && config.authDeniedMessages.length
+      ? config.authDeniedMessages
+      : defaults;
+  const picked = String(pool[Math.floor(Math.random() * pool.length)]);
+  return picked.replaceAll("{agentName}", agentName).replaceAll("Agent Impasta", `Agent ${agentName}`);
+}
+
+function getCelebrationTitle() {
+  const defaults = [
+    "Operation: Older & Bolder",
+    "Mission Accomplished, Agent Cakeforce",
+    "Top Secret: It Is Your Birthday",
+    "License to Party: Activated"
+  ];
+  const pool =
+    Array.isArray(config.celebrationTitles) && config.celebrationTitles.length
+      ? config.celebrationTitles
+      : defaults;
+  return String(pool[Math.floor(Math.random() * pool.length)]);
+}
+
+function getPreMissionDiagnostics() {
+  const code = getAgentCode();
+  const defaults = [
+    `> booting laughter engine for ${code}...`,
+    "> scanning pantry for birthday-grade cake...",
+    "> threat detected: suspiciously empty plate",
+    "> deploying emergency dessert protocol..."
+  ];
+  const pool =
+    Array.isArray(config.preMissionDiagnostics) && config.preMissionDiagnostics.length
+      ? config.preMissionDiagnostics
+      : defaults;
+  return pool.map((line) => String(line));
+}
+
+function getPasswordHint(attempts = authFailedAttempts) {
+  const age = getRecipientAge();
+  if (attempts <= 0) {
+    return "Hint: IMF format = prefix + age";
+  }
+  if (attempts === 1) {
+    return 'Hint: Prefix has 3 letters and starts with "i".';
+  }
+  if (attempts === 2) {
+    return 'Hint: Prefix is "iam".';
+  }
+  return `Hint: Try "iam${age}"`;
+}
+
 /**
  * Mirrors profiles/default.json — used when fetch() fails (e.g. opening index.html via file://).
  * Browsers block loading local JSON with fetch from file URLs; use a local HTTP server for full profiles.
@@ -246,6 +309,20 @@ const EMBEDDED_PROFILE_DEFAULT = {
     { label: "Clearance", key: "clearance" },
     { label: "Status", key: "status" },
     { label: "Favorite Intel", key: "favoriteIntel" }
+  ],
+  authDeniedMessages: [
+    "ACCESS DENIED. Nice try, Agent {agentName}.",
+    "ACCESS DENIED. Keyboard confidence detected, password confidence missing."
+  ],
+  celebrationTitles: [
+    "Operation: Older & Bolder",
+    "Mission Accomplished, Agent Cakeforce",
+    "Top Secret: It Is Your Birthday"
+  ],
+  preMissionDiagnostics: [
+    "> scanning pantry for birthday-grade cake...",
+    "> threat detected: suspiciously empty plate",
+    "> deploying emergency dessert protocol..."
   ],
   greeting: "Good evening",
   introLine: "Your next assignment has been delivered with full birthday-level priority.",
@@ -550,6 +627,7 @@ function setupProfileData() {
     profilePhotoEl.src = "./assets/profile/profile-default.jpg";
   };
   profilePhotoEl.src = photoPath;
+  bindProfilePhotoEasterEgg();
 }
 
 function buildLegacyProfileFields() {
@@ -634,9 +712,51 @@ function renderProfileFields(profileValueMap) {
     labelEl.textContent = field.label;
     valueEl.textContent = resolvedValue;
     valueEl.classList.add(getProfileValueLengthClass(resolvedValue));
+    if (field.key === "agentCode") {
+      item.classList.add("field-agent-code");
+      valueEl.classList.add("field-agent-code-value");
+    }
     item.append(labelEl, valueEl);
     profileGridEl.appendChild(item);
   }
+}
+
+function bindProfilePhotoEasterEgg() {
+  profilePhotoEl.onclick = () => {
+    profilePhotoTapCount += 1;
+    if (profilePhotoTapTimer) {
+      clearTimeout(profilePhotoTapTimer);
+    }
+    profilePhotoTapTimer = setTimeout(() => {
+      profilePhotoTapCount = 0;
+      profilePhotoTapTimer = null;
+    }, 2400);
+
+    if (profilePhotoTapCount < 5) {
+      return;
+    }
+
+    profilePhotoTapCount = 0;
+    const old = profileClassifiedLevelEl.textContent;
+    profileClassifiedLevelEl.textContent = "MEME-9000";
+    playTone("triangle", 0, 0.08, 1040, 0.06);
+    playTone("square", 0.1, 0.08, 1360, 0.05);
+    setTimeout(() => {
+      profileClassifiedLevelEl.textContent = old;
+    }, 1850);
+  };
+}
+
+async function playPreMissionDiagnostics() {
+  const lines = getPreMissionDiagnostics();
+  missionTextEl.textContent = "";
+  for (const line of lines) {
+    missionTextEl.textContent += `${line}\n`;
+    playTone("sine", 0, 0.03, 920 + Math.random() * 180, 0.018);
+    await wait(260);
+  }
+  await wait(360);
+  missionTextEl.textContent = "";
 }
 
 function showProfileScreen() {
@@ -775,15 +895,20 @@ async function runAuthSequence() {
   const expectedPassword = getExpectedPassword();
 
   if (typedPassword !== expectedPassword) {
+    authFailedAttempts += 1;
     authStatusEl.classList.remove("loading");
     authStatusEl.classList.add("error");
-    authStatusEl.textContent = "ACCESS DENIED. INVALID PASSWORD.";
+    authStatusEl.textContent = getAuthDeniedMessage();
     authProgressEl.classList.remove("visible");
     authProgressFillEl.style.width = "0%";
     authPasswordInputEl.value = "";
+    if (authPasswordHintEl) {
+      authPasswordHintEl.textContent = getPasswordHint(authFailedAttempts);
+    }
     return;
   }
 
+  authFailedAttempts = 0;
   authBtnEl.disabled = true;
   authPasswordInputEl.disabled = true;
   authPasswordInputEl.blur();
@@ -1052,7 +1177,7 @@ function setupCelebrationMessage() {
   const celebrationAgentName = String(config.agentName || config.recipientName || "Agent");
   const agentCode = getAgentCode();
   const enteringYear = getRecipientAge() + 1;
-  celebrationTitleEl.textContent = `Happy Birthday,\n${celebrationAgentName}!`;
+  celebrationTitleEl.textContent = `${getCelebrationTitle()}\n${celebrationAgentName}!`;
   celebrationSubtextEl.textContent = `Agent ${agentCode}, welcome to your amazing ${formatOrdinal(
     enteringYear
   )} year. Celebrate big and enjoy every moment.`;
@@ -1309,6 +1434,11 @@ async function runMission() {
     isRunning = false;
     return;
   }
+  await playPreMissionDiagnostics();
+  if (missionAbortRequested) {
+    isRunning = false;
+    return;
+  }
   await wait(MESSAGE_START_DELAY_MS);
   if (missionAbortRequested) {
     isRunning = false;
@@ -1390,6 +1520,9 @@ async function bootApp() {
   authAgentInputEl.value = String(initialAgentName);
   authPasswordInputEl.disabled = false;
   authBtnEl.disabled = false;
+  if (authPasswordHintEl) {
+    authPasswordHintEl.textContent = getPasswordHint(0);
+  }
   authStatusEl.classList.remove("error");
   authStatusEl.textContent = `AWAITING CREDENTIALS // ${agentCode}`;
   preloadAuthPageAssets();

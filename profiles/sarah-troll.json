@@ -23,6 +23,21 @@
     { "label": "Status", "key": "status" },
     { "label": "Favorite Intel", "key": "favoriteIntel" }
   ],
+  "authDeniedMessages": [
+    "ACCESS DENIED. Agent ST-007, that guess was cute.",
+    "ACCESS DENIED. Dessert access suspended until better password choices.",
+    "ACCESS DENIED. Serious mode not found."
+  ],
+  "celebrationTitles": [
+    "License to Party: Granted",
+    "Operation Trolli Thunder",
+    "Mission Complete: Chaos and Cake"
+  ],
+  "preMissionDiagnostics": [
+    "> checking dance floor integrity...",
+    "> locating nearest dessert extraction route...",
+    "> warning: fun levels approaching illegal..."
+  ],
   "greeting": "Good evening",
 "introLine": "Attention Agent: birthday protocol engaged. Serious behavior is no longer authorized.",
 "yearLinePrefix": "As of this moment, you are officially entering Year",

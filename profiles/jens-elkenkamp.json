@@ -23,6 +23,21 @@
     { "label": "Status", "key": "status" },
     { "label": "Favorite Intel", "key": "favoriteIntel" }
   ],
+  "authDeniedMessages": [
+    "ACCESS DENIED. Error VLT-404: correct password not found.",
+    "ACCESS DENIED. Espresso accepted, password rejected.",
+    "ACCESS DENIED. Try again, legend."
+  ],
+  "celebrationTitles": [
+    "Mission Complete: Vault Opened",
+    "Operation Cakestorm: Successful",
+    "Top Secret: Jens Birthday Protocol"
+  ],
+  "preMissionDiagnostics": [
+    "> calibrating celebration satellites...",
+    "> morale levels rising above safe limits...",
+    "> launching confetti readiness check..."
+  ],
   "greeting": "Good evening",
   "introLine": "Your next assignment has been delivered with full birthday-level priority.",
   "yearLinePrefix": "As of this moment, you are officially entering Year",

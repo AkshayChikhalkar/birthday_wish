@@ -23,6 +23,21 @@
     { "label": "Status", "key": "status" },
     { "label": "Favorite Intel", "key": "favoriteIntel" }
   ],
+  "authDeniedMessages": [
+    "ACCESS DENIED. Agent SMI-909, that was a dramatic guess.",
+    "ACCESS DENIED. The cake laughed at that password.",
+    "ACCESS DENIED. Please reattempt with birthday confidence."
+  ],
+  "celebrationTitles": [
+    "Operation Smile Surge",
+    "Mission Accomplished, Agent Sami",
+    "Confetti Command: Enabled"
+  ],
+  "preMissionDiagnostics": [
+    "> deploying smiles across all sectors...",
+    "> neutralizing sadness with dance protocol...",
+    "> loading maximum birthday energy..."
+  ],
   "greeting": "Good evening",
   "introLine": "Your next assignment has been delivered with full birthday-level priority.",
   "yearLinePrefix": "As of this moment, you are officially entering Year",

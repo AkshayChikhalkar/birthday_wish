@@ -368,6 +368,12 @@ button {
   line-height: 1.35;
 }
 
+.profile-grid p.field-agent-code strong.field-agent-code-value {
+  color: #ff8d72;
+  text-shadow: 0 0 10px rgba(255, 120, 83, 0.18);
+  letter-spacing: 0.6px;
+}
+
 .profile-grid p:nth-last-child(-n + 2) {
   border-bottom: none;
 }
@@ -436,6 +442,19 @@ button {
   color: #ffd27a;
   letter-spacing: 1.8px;
   font-size: 13px;
+}
+
+#authAgentCode,
+#terminalAgentCode {
+  color: #ff9f43;
+  text-shadow: 0 0 8px rgba(255, 159, 67, 0.25);
+}
+
+.auth-hint {
+  margin: 2px 0 0;
+  color: #ffc98a;
+  font-size: 12px;
+  letter-spacing: 0.2px;
 }
 
 .auth-card h2 {
