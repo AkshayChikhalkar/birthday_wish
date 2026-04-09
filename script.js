@@ -16,6 +16,8 @@ const profileCardEl = document.getElementById("profileCard");
 const profilePhotoEl = document.getElementById("profilePhoto");
 const profileGridEl = document.getElementById("profileGrid");
 const profileClassifiedLevelEl = document.getElementById("profileClassifiedLevel");
+const classifiedModalEl = document.getElementById("classifiedModal");
+const classifiedModalCloseBtnEl = document.getElementById("classifiedModalCloseBtn");
 const profileContinueBtnEl = document.getElementById("profileContinueBtn");
 const nameInput = document.getElementById("nameInput");
 const ageInput = document.getElementById("ageInput");
@@ -242,7 +244,7 @@ function getCelebrationTitle() {
   const defaults = [
     "Operation: Older & Bolder",
     "Mission Accomplished, Agent Cakeforce",
-    "Top Secret: It Is Your Birthday",
+    "Top Secret: It's Your Birthday",
     "License to Party: Activated"
   ];
   const pool =
@@ -253,18 +255,19 @@ function getCelebrationTitle() {
 }
 
 function getPreMissionDiagnostics() {
-  const code = getAgentCode();
   const defaults = [
-    `> booting laughter engine for ${code}...`,
-    "> scanning pantry for birthday-grade cake...",
-    "> threat detected: suspiciously empty plate",
-    "> deploying emergency dessert protocol..."
+    "> scanning pantry...",
+    "> threat detected: empty plate",
+    "> deploying emergency dessert protocol"
   ];
   const pool =
     Array.isArray(config.preMissionDiagnostics) && config.preMissionDiagnostics.length
       ? config.preMissionDiagnostics
       : defaults;
-  return pool.map((line) => String(line));
+  const normalized = pool.map((line) => String(line));
+  const count = Math.max(2, Math.min(3, normalized.length, 2 + Math.floor(Math.random() * 2)));
+  const shuffled = [...normalized].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
 }
 
 function getPasswordHint(attempts = authFailedAttempts) {
@@ -303,6 +306,8 @@ const EMBEDDED_PROFILE_DEFAULT = {
     { label: "Name", key: "name" },
     { label: "Date of Birth", key: "dob" },
     { label: "Age", key: "age" },
+    { label: "Birthday Rank", key: "birthdayRank" },
+    { label: "Lie Detector", value: "\"I will only eat one slice\" -> FALSE" },
     { label: "Address", key: "address" },
     { label: "Last Seen", key: "lastSeen" },
     { label: "Speciality", key: "speciality" },
@@ -317,12 +322,12 @@ const EMBEDDED_PROFILE_DEFAULT = {
   celebrationTitles: [
     "Operation: Older & Bolder",
     "Mission Accomplished, Agent Cakeforce",
-    "Top Secret: It Is Your Birthday"
+    "Top Secret: It's Your Birthday"
   ],
   preMissionDiagnostics: [
-    "> scanning pantry for birthday-grade cake...",
-    "> threat detected: suspiciously empty plate",
-    "> deploying emergency dessert protocol..."
+    "> scanning pantry...",
+    "> threat detected: empty plate",
+    "> deploying emergency dessert protocol"
   ],
   greeting: "Good evening",
   introLine: "Your next assignment has been delivered with full birthday-level priority.",
@@ -473,6 +478,12 @@ function buildMessage(name, age, agentAlias) {
           "Accept cake, compliments, and unreasonable happiness.",
           "Upgrade confidence, joy, and legendary energy."
         ];
+  const sideObjectivePool = [
+    "Protect cake at all costs.",
+    "Avoid suspicious relatives asking about marriage/career.",
+    "Dance like CCTV is offline."
+  ];
+  const sideObjective = sideObjectivePool[Math.floor(Math.random() * sideObjectivePool.length)];
   const acceptanceTemplate =
     config.acceptanceLine ||
     "If you choose to accept this mission, your {ageOrdinal} year will be your boldest one yet.";
@@ -492,6 +503,7 @@ function buildMessage(name, age, agentAlias) {
     "",
     objectivesHeading,
     ...objectives.map((objective) => `- ${objective}`),
+    `- ${sideObjective}`,
     "",
     acceptanceLine,
     "",
@@ -582,6 +594,19 @@ function getRecipientAge() {
   return calculateAgeFromDob(config.recipientDob || config.dob) || 27;
 }
 
+function getBirthdayRank(age = getRecipientAge()) {
+  if (age >= 40) {
+    return "Supreme Dessert Strategist";
+  }
+  if (age >= 30) {
+    return "Elite Cake Commander";
+  }
+  if (age >= 20) {
+    return "Veteran Party Operative";
+  }
+  return "Junior Celebration Cadet";
+}
+
 function getExpectedPassword() {
   const configuredAge = getRecipientAge();
   return `iam${Math.max(configuredAge, 0)}`;
@@ -591,6 +616,7 @@ function setupProfileData() {
   const alias = String(config.agentName || config.recipientName || "Unknown");
   const name = String(config.recipientName || alias);
   const age = String(getRecipientAge());
+  const birthdayRank = getBirthdayRank(Number(age));
   const dob = String(config.recipientDob || config.dob || "CLASSIFIED");
   const clearance = String(config.clearanceLevel || "OMEGA-7");
   const status = String(config.agentStatus || "ACTIVE");
@@ -609,6 +635,7 @@ function setupProfileData() {
     dob,
     recipientDob: dob,
     age,
+    birthdayRank,
     address,
     agentAddress: address,
     lastSeen,
@@ -637,6 +664,8 @@ function buildLegacyProfileFields() {
     { label: "Name", key: "name" },
     { label: "Date of Birth", key: "dob" },
     { label: "Age", key: "age" },
+    { label: "Birthday Rank", key: "birthdayRank" },
+    { label: "Lie Detector", value: "\"I will only eat one slice\" -> FALSE" },
     { label: "Address", key: "address" },
     { label: "Last Seen", key: "lastSeen" },
     { label: "Speciality", key: "speciality" },
@@ -732,31 +761,44 @@ function bindProfilePhotoEasterEgg() {
       profilePhotoTapTimer = null;
     }, 2400);
 
-    if (profilePhotoTapCount < 5) {
+    if (profilePhotoTapCount < 2) {
       return;
     }
 
     profilePhotoTapCount = 0;
-    const old = profileClassifiedLevelEl.textContent;
-    profileClassifiedLevelEl.textContent = "MEME-9000";
     playTone("triangle", 0, 0.08, 1040, 0.06);
     playTone("square", 0.1, 0.08, 1360, 0.05);
-    setTimeout(() => {
-      profileClassifiedLevelEl.textContent = old;
-    }, 1850);
+    openClassifiedModal();
   };
+}
+
+function openClassifiedModal() {
+  if (!classifiedModalEl) {
+    return;
+  }
+  classifiedModalEl.classList.remove("hidden");
+  classifiedModalEl.setAttribute("aria-hidden", "false");
+}
+
+function closeClassifiedModal() {
+  if (!classifiedModalEl) {
+    return;
+  }
+  classifiedModalEl.classList.add("hidden");
+  classifiedModalEl.setAttribute("aria-hidden", "true");
 }
 
 async function playPreMissionDiagnostics() {
   const lines = getPreMissionDiagnostics();
+  const lineDelayMs = Number(config.preMissionLineDelayMs) || 620;
+  const holdAfterMs = Number(config.preMissionHoldMs) || 1600;
   missionTextEl.textContent = "";
   for (const line of lines) {
     missionTextEl.textContent += `${line}\n`;
     playTone("sine", 0, 0.03, 920 + Math.random() * 180, 0.018);
-    await wait(260);
+    await wait(lineDelayMs);
   }
-  await wait(360);
-  missionTextEl.textContent = "";
+  await wait(holdAfterMs);
 }
 
 function showProfileScreen() {
@@ -930,6 +972,10 @@ async function runAuthSequence() {
   }
   await wait(AUTH_UI.postProgressHoldMs);
   authStatusEl.classList.remove("loading");
+  playTone("triangle", 0, 0.09, 980, 0.06);
+  playTone("sine", 0.08, 0.08, 1260, 0.05);
+  authStatusEl.textContent = "VOICE PRINT MATCHED: DANGEROUSLY COOL HUMAN.";
+  await wait(650);
   authStatusEl.textContent = `AUTHENTICATED (${getAgentCode()}). SECURE CHANNEL OPEN.`;
   isAuthenticated = true;
   await startupAuthToProfileTransition();
@@ -1461,6 +1507,17 @@ async function runMission() {
 replayBtn.addEventListener("click", showCelebrationScreen);
 authBtnEl.addEventListener("click", runAuthSequence);
 profileContinueBtnEl.addEventListener("click", openMissionTerminal);
+classifiedModalCloseBtnEl?.addEventListener("click", closeClassifiedModal);
+classifiedModalEl?.addEventListener("click", (event) => {
+  if (event.target === classifiedModalEl) {
+    closeClassifiedModal();
+  }
+});
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && classifiedModalEl && !classifiedModalEl.classList.contains("hidden")) {
+    closeClassifiedModal();
+  }
+});
 authPasswordInputEl.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     runAuthSequence();
