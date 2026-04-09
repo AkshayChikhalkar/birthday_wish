@@ -60,6 +60,8 @@ let startupAutoplayRetryIds = [];
 let removeStartupInteractionListeners = null;
 /** True while mission narration (file or TTS) should keep BGM ducked — survives resize/orientation. */
 let missionNarrationDuckActive = false;
+/** True when browser ignored volume ducking and we fell back to temporary mute during narration. */
+let narrationDuckMuteFallbackActive = false;
 
 /**
  * Single source of truth for all mix levels and related timing — edit here only (not in profile JSON).
@@ -72,8 +74,8 @@ const AUDIO = {
   /** Mission BGM while self-destruct SFX plays */
   missionBackgroundDuringDestruct: 0.26,
   /** Narration duck for all devices: multiply mission BGM, then cap */
-  narrationDuckFactor: 0.42,
-  narrationDuckCap: 0.1,
+  narrationDuckFactor: 0.2,
+  narrationDuckCap: 0.05,
   destructionSfx: 0.95,
   /** Auth → profile startup bed dip */
   startupDipMinRatio: 0.35,
@@ -242,7 +244,17 @@ function applyNarrationDuckToBackground() {
     return;
   }
   const base = getMissionBackgroundBaseVolume();
-  backgroundAudio.volume = Math.min(base * AUDIO.narrationDuckFactor, AUDIO.narrationDuckCap);
+  const target = Math.min(base * AUDIO.narrationDuckFactor, AUDIO.narrationDuckCap);
+  backgroundAudio.volume = target;
+
+  // Some mobile browsers ignore media volume changes; if readback does not match, fallback to mute.
+  if (Math.abs(backgroundAudio.volume - target) > 0.001) {
+    backgroundAudio.muted = true;
+    narrationDuckMuteFallbackActive = true;
+  } else if (narrationDuckMuteFallbackActive) {
+    backgroundAudio.muted = false;
+    narrationDuckMuteFallbackActive = false;
+  }
 }
 
 function syncBackgroundVolumeFromConfig() {
@@ -261,6 +273,10 @@ function duckBackgroundForNarration() {
 
 function restoreBackgroundAfterNarration() {
   missionNarrationDuckActive = false;
+  if (narrationDuckMuteFallbackActive) {
+    backgroundAudio.muted = false;
+    narrationDuckMuteFallbackActive = false;
+  }
   syncBackgroundVolumeFromConfig();
 }
 
@@ -733,6 +749,8 @@ function speakMessage(text) {
 
 function stopMediaAudio() {
   missionNarrationDuckActive = false;
+  narrationDuckMuteFallbackActive = false;
+  backgroundAudio.muted = false;
   destructionAudio.pause();
   destructionAudio.currentTime = 0;
   backgroundAudio.pause();
