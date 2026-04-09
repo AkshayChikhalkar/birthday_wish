@@ -1685,10 +1685,6 @@ function startCountdown(seconds) {
     remaining -= 1;
     if (remaining > 0) {
       countdownEl.textContent = `SELF-DESTRUCT IN ${remaining}...`;
-      if (remaining === 1 && !destructSoundStarted) {
-        destructSoundStarted = true;
-        playDestructSequence();
-      }
       if (remaining <= COUNTDOWN_BEEP_FROM) {
         playTone("square", 0, 0.08, 1100, 0.08);
       }
@@ -1704,8 +1700,10 @@ async function triggerSelfDestruct() {
   safeStopSpeech();
   if (!destructSoundStarted) {
     destructSoundStarted = true;
-    await playDestructSequence();
+    // Start destruction SFX slightly before smoke for tighter sync.
+    playDestructSequence();
   }
+  await wait(100);
   fadeOutBackgroundAudio();
   terminal.classList.add("smokeout");
   spawnSmokeCloud(1200);
