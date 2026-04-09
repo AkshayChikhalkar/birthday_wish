@@ -1,5 +1,7 @@
 const missionTextEl = document.getElementById("missionText");
 const replayBtn = document.getElementById("replayBtn");
+const welcomeScreenEl = document.getElementById("welcomeScreen");
+const welcomeSubtitleEl = document.getElementById("welcomeSubtitle");
 const authScreenEl = document.getElementById("authScreen");
 const authAgentInputEl = document.getElementById("authAgentInput");
 const authPasswordInputEl = document.getElementById("authPasswordInput");
@@ -50,6 +52,7 @@ let confettiAnimationHandle = null;
 let celebrationPopHandle = null;
 let destructSoundStarted = false;
 let isAuthenticated = false;
+let welcomeSequenceDone = false;
 let missionAbortRequested = false;
 let audioUnlocked = false;
 let currentProfileSlug = "default";
@@ -82,6 +85,12 @@ const AUDIO = {
   startupDipSteps: 5,
   startupDipStepMs: 30,
   startupDipHoldMs: 55
+};
+
+const AUTH_UI = {
+  clickDelayMs: 850,
+  progressStepMs: 420,
+  postProgressHoldMs: 420
 };
 
 const destructionAudio = new Audio("./assets/distruction.mp3");
@@ -167,6 +176,48 @@ function getRequestedProfileSlug() {
   const pathSlug = window.location.pathname.split("/").filter(Boolean)[0];
   const raw = (querySlug || pathSlug || "default").trim().toLowerCase();
   return /^[a-z0-9-]+$/.test(raw) ? raw : "default";
+}
+
+async function playWelcomeSequence() {
+  if (welcomeSequenceDone) {
+    authScreenEl.classList.remove("hidden");
+    return;
+  }
+  if (!welcomeScreenEl || !authScreenEl) {
+    welcomeSequenceDone = true;
+    return;
+  }
+
+  const defaultLine = "Calibrating encrypted access protocols...";
+  const recipient = String(config.agentName || config.recipientName || "Agent");
+  if (welcomeSubtitleEl) {
+    welcomeSubtitleEl.textContent = `Welcome, ${recipient}. ${defaultLine}`;
+  }
+
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  await wait(prefersReducedMotion ? 900 : 4700);
+
+  welcomeScreenEl.classList.add("hidden");
+  authScreenEl.classList.remove("hidden");
+  welcomeSequenceDone = true;
+  playWelcomeTransitionEffects();
+}
+
+function playWelcomeTransitionEffects() {
+  // Subtle metallic "creak" + interface chirps when auth screen is revealed.
+  const sequence = [
+    { type: "sawtooth", start: 0.0, duration: 0.09, frequency: 210, volume: 0.032 },
+    { type: "triangle", start: 0.08, duration: 0.14, frequency: 175, volume: 0.026 },
+    { type: "sine", start: 0.19, duration: 0.06, frequency: 980, volume: 0.024 },
+    { type: "square", start: 0.29, duration: 0.07, frequency: 820, volume: 0.018 }
+  ];
+  for (const tone of sequence) {
+    playTone(tone.type, tone.start, tone.duration, tone.frequency, tone.volume);
+  }
+}
+
+function canStartStartupMusic() {
+  return welcomeSequenceDone || !welcomeScreenEl;
 }
 
 /**
@@ -626,21 +677,23 @@ async function runAuthSequence() {
   authBtnEl.disabled = true;
   authPasswordInputEl.disabled = true;
   authPasswordInputEl.blur();
+  authStatusEl.classList.remove("error");
+  authStatusEl.classList.add("loading");
+  authStatusEl.textContent = "HANDSHAKE ACCEPTED. PREPARING SECURE CHECK...";
+  await wait(AUTH_UI.clickDelayMs);
   suppressStartupAutoplayKicks();
   await unlockAudioIfNeeded();
   if (startupAudio.paused) {
     tryStartStartupMusic();
   }
-  authStatusEl.classList.remove("error");
-  authStatusEl.classList.add("loading");
   authStatusEl.textContent = "VERIFYING CREDENTIALS...";
   authProgressEl.classList.add("visible");
 
   for (const progress of [18, 37, 61, 83, 100]) {
     authProgressFillEl.style.width = `${progress}%`;
-    await wait(220);
+    await wait(AUTH_UI.progressStepMs);
   }
-  await wait(220);
+  await wait(AUTH_UI.postProgressHoldMs);
   authStatusEl.classList.remove("loading");
   authStatusEl.textContent = "AUTHENTICATED. SECURE CHANNEL OPEN.";
   isAuthenticated = true;
@@ -1179,7 +1232,7 @@ document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
     safeStopSpeech();
     stopMediaAudio();
-  } else if (!isAuthenticated) {
+  } else if (!isAuthenticated && canStartStartupMusic()) {
     tryStartStartupMusic();
   }
 });
@@ -1188,13 +1241,15 @@ window.addEventListener("pageshow", (event) => {
   if (event.persisted) {
     window.__BW_SUPPRESS_STARTUP_KICKS = false;
     bindStartupMusicOnFirstPageInteraction();
-    tryStartStartupMusic();
-    scheduleStartupAutoplayRetries();
+    if (canStartStartupMusic()) {
+      tryStartStartupMusic();
+      scheduleStartupAutoplayRetries();
+    }
   }
 });
 
 window.addEventListener("load", () => {
-  if (!isAuthenticated && startupAudio.paused) {
+  if (!isAuthenticated && canStartStartupMusic() && startupAudio.paused) {
     tryStartStartupMusic();
   }
 });
@@ -1218,21 +1273,24 @@ async function bootApp() {
   authStatusEl.classList.remove("error");
   authStatusEl.textContent = "AWAITING CREDENTIALS...";
   preloadAuthPageAssets();
+  await playWelcomeSequence();
   bindStartupMusicOnFirstPageInteraction();
   startupAudio.addEventListener(
     "canplaythrough",
     () => {
-      if (!isAuthenticated && startupAudio.paused) {
+      if (!isAuthenticated && canStartStartupMusic() && startupAudio.paused) {
         tryStartStartupMusic();
       }
     },
     { once: true }
   );
-  tryStartStartupMusic();
-  scheduleStartupAutoplayRetries();
+  if (canStartStartupMusic()) {
+    tryStartStartupMusic();
+    scheduleStartupAutoplayRetries();
+  }
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      if (!isAuthenticated && startupAudio.paused) {
+      if (!isAuthenticated && canStartStartupMusic() && startupAudio.paused) {
         tryStartStartupMusic();
       }
     });
@@ -1240,6 +1298,8 @@ async function bootApp() {
 }
 
 bootApp().catch(() => {
+  welcomeScreenEl?.classList.add("hidden");
+  authScreenEl.classList.remove("hidden");
   authStatusEl.classList.add("error");
   authStatusEl.textContent = "PROFILE LOAD FAILED. TRY AGAIN.";
 });

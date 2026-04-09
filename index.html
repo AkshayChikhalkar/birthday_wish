@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mission Birthday Briefing</title>
+    <title>IMF | Birthday Mission Briefing</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -25,10 +25,20 @@
       preload="auto"
       loop
       playsinline
-      autoplay
     ></audio>
 
-    <section class="auth-screen" id="authScreen">
+    <section class="welcome-screen" id="welcomeScreen" aria-live="polite">
+      <div class="welcome-card">
+        <p class="welcome-kicker">INITIALIZING SECURE NODE</p>
+        <h1 class="welcome-title">Welcome to IMF Secure Database</h1>
+        <p class="welcome-subtitle" id="welcomeSubtitle">Calibrating encrypted access protocols...</p>
+        <div class="welcome-progress" aria-hidden="true">
+          <span></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="auth-screen hidden" id="authScreen">
       <div class="auth-card">
         <p class="auth-tag">IMF IDENTITY VERIFICATION</p>
         <h2>Secure Access Required</h2>
