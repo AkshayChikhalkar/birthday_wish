@@ -65,8 +65,7 @@ let missionNarrationDuckActive = false;
  * Single source of truth for all mix levels and related timing — edit here only (not in profile JSON).
  */
 const AUDIO = {
-  missionBackground: 0.2,
-  /** Narrow / touch UIs: quieter bed — phone speakers mask speech more than laptop drivers */
+  missionBackground: 0.4,
   missionBackgroundMobile: 0.11,
   startup: 0.38,
   celebration: 0.45,
@@ -76,9 +75,7 @@ const AUDIO = {
   /** Mission BGM while self-destruct SFX plays */
   missionBackgroundDuringDestruct: 0.12,
   missionBackgroundDuringDestructMobile: 0.07,
-  /** Narration duck: multiply mission BGM, then cap */
-  narrationDuckMobileFactor: 0.14,
-  narrationDuckMobileCap: 0.022,
+  /** Narration duck (desktop / mouse): multiply mission BGM, then cap */
   narrationDuckDesktopFactor: 0.42,
   narrationDuckDesktopCap: 0.1,
   destructionSfx: 0.95,
@@ -127,10 +124,10 @@ startupAudio.load();
 narrationAudio.load();
 
 function getMissionBackgroundBaseVolume() {
-  return Math.min(
-    1,
-    isMissionBackgroundMobileReduction() ? AUDIO.missionBackgroundMobile : AUDIO.missionBackground
-  );
+  if (!isMissionBackgroundMobileReduction()) {
+    return Math.min(1, AUDIO.missionBackground);
+  }
+  return Math.min(1, AUDIO.missionBackgroundMobile);
 }
 
 function applyAudioLevelsToMediaElements() {
@@ -246,24 +243,31 @@ async function fetchProfileConfig(slug) {
   return cloneEmbeddedDefaultProfile();
 }
 
-/** Narrow / touch UI: used for narration ducking and default narration boost — not for BGM scaling. */
+/**
+ * Phone / tablet / touch: wider than 768px matters — many phones in landscape exceed 768px and
+ * were misclassified as “desktop”, skipping the stronger mobile mix.
+ */
 function isMissionBackgroundMobileReduction() {
-  return (
-    window.matchMedia("(max-width: 768px)").matches || window.matchMedia("(pointer: coarse)").matches
-  );
+  const narrow = window.matchMedia("(max-width: 1024px)").matches;
+  const coarse = window.matchMedia("(pointer: coarse)").matches;
+  const primaryTouch =
+    typeof navigator !== "undefined" &&
+    navigator.maxTouchPoints > 0 &&
+    window.matchMedia("(hover: none)").matches;
+  return narrow || coarse || primaryTouch;
 }
 
-/** Applies current duck math using the same mobile/desktop rules (also used after resize). */
+/** Applies current duck math (also used after resize). Touch/narrow: silence BGM under narration — most reliable on phone speakers. */
 function applyNarrationDuckToBackground() {
   if (backgroundAudio.paused) {
     return;
   }
-  const base = getMissionBackgroundBaseVolume();
   if (isMissionBackgroundMobileReduction()) {
-    backgroundAudio.volume = Math.min(base * AUDIO.narrationDuckMobileFactor, AUDIO.narrationDuckMobileCap);
-  } else {
-    backgroundAudio.volume = Math.min(base * AUDIO.narrationDuckDesktopFactor, AUDIO.narrationDuckDesktopCap);
+    backgroundAudio.volume = 0;
+    return;
   }
+  const base = getMissionBackgroundBaseVolume();
+  backgroundAudio.volume = Math.min(base * AUDIO.narrationDuckDesktopFactor, AUDIO.narrationDuckDesktopCap);
 }
 
 function syncBackgroundVolumeFromConfig() {
