@@ -24,7 +24,7 @@
     { "label": "Favorite Intel", "key": "favoriteIntel" }
   ],
   "authDeniedMessages": [
-    "ACCESS DENIED. Agent ST-007, that guess was cute.",
+    "ACCESS DENIED. Agent {agentName}! ST-007, that guess was cute.",
     "ACCESS DENIED. Dessert access suspended until better password choices.",
     "ACCESS DENIED. Serious mode not found."
   ],

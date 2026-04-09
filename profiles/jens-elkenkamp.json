@@ -24,7 +24,7 @@
     { "label": "Favorite Intel", "key": "favoriteIntel" }
   ],
   "authDeniedMessages": [
-    "ACCESS DENIED. Error VLT-404: correct password not found.",
+    "ACCESS DENIED. Nice try, Agent {agentName}.",
     "ACCESS DENIED. Espresso accepted, password rejected.",
     "ACCESS DENIED. Try again, legend."
   ],

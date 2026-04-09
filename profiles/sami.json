@@ -24,7 +24,7 @@
     { "label": "Favorite Intel", "key": "favoriteIntel" }
   ],
   "authDeniedMessages": [
-    "ACCESS DENIED. Agent SMI-909, that was a dramatic guess.",
+    "ACCESS DENIED. Nice try, Agent {agentName}.",
     "ACCESS DENIED. The cake laughed at that password.",
     "ACCESS DENIED. Please reattempt with birthday confidence."
   ],
