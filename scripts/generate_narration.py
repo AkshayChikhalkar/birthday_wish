@@ -1,7 +1,10 @@
 import json
 import pathlib
 import re
+import shutil
+import subprocess
 import sys
+import tempfile
 
 try:
     import edge_tts
@@ -13,6 +16,10 @@ except ImportError:
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 PROFILES_DIR = ROOT / "profiles"
 DEFAULT_NARRATION_VOICE = "en-US-ChristopherNeural"
+# Louder/clearer speech target for phone playback.
+NARRATION_TARGET_LUFS = -15
+NARRATION_TARGET_TRUE_PEAK = -1
+NARRATION_TARGET_LRA = 6
 
 
 def parse_string_value(profile: dict, key: str, default: str) -> str:
@@ -119,8 +126,43 @@ def build_message(profile: dict) -> str:
 
 async def generate_mp3(text: str, voice: str, rate: str, output_path: pathlib.Path):
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    communicator = edge_tts.Communicate(text=text, voice=voice, rate=rate)
-    await communicator.save(str(output_path))
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        raw_output_path = pathlib.Path(tmp_dir) / "narration-raw.mp3"
+        communicator = edge_tts.Communicate(text=text, voice=voice, rate=rate)
+        await communicator.save(str(raw_output_path))
+        master_narration_audio(raw_output_path, output_path)
+
+
+def master_narration_audio(input_path: pathlib.Path, output_path: pathlib.Path):
+    ffmpeg_bin = shutil.which("ffmpeg")
+    if not ffmpeg_bin:
+        output_path.write_bytes(input_path.read_bytes())
+        print(f"ffmpeg not found; saved unmastered narration: {output_path}")
+        return
+
+    filter_chain = (
+        "highpass=f=120,"
+        "equalizer=f=3000:t=q:w=1.0:g=3,"
+        "acompressor=threshold=-21dB:ratio=3:attack=5:release=120:makeup=5,"
+        f"loudnorm=I={NARRATION_TARGET_LUFS}:TP={NARRATION_TARGET_TRUE_PEAK}:LRA={NARRATION_TARGET_LRA}"
+    )
+    cmd = [
+        ffmpeg_bin,
+        "-y",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-i",
+        str(input_path),
+        "-af",
+        filter_chain,
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        str(output_path),
+    ]
+    subprocess.run(cmd, check=True)
 
 
 def get_output_path(profile_path: pathlib.Path, profile: dict) -> pathlib.Path:

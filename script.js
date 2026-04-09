@@ -60,8 +60,8 @@ let startupAutoplayRetryIds = [];
 let removeStartupInteractionListeners = null;
 /** True while mission narration (file or TTS) should keep BGM ducked — survives resize/orientation. */
 let missionNarrationDuckActive = false;
-/** True when browser ignored volume ducking and we fell back to temporary mute during narration. */
-let narrationDuckMuteFallbackActive = false;
+/** Snapshot of currently active bed tracks so we can restore exactly after narration. */
+let narrationDuckRestoreState = [];
 
 /**
  * Single source of truth for all mix levels and related timing — edit here only (not in profile JSON).
@@ -240,21 +240,28 @@ async function fetchProfileConfig(slug) {
 
 /** Applies current duck math (also used after resize). */
 function applyNarrationDuckToBackground() {
-  if (backgroundAudio.paused) {
-    return;
-  }
-  const base = getMissionBackgroundBaseVolume();
-  const target = Math.min(base * AUDIO.narrationDuckFactor, AUDIO.narrationDuckCap);
-  backgroundAudio.volume = target;
+  const duckTrack = (audioEl, baseVolume) => {
+    if (audioEl.paused) {
+      return;
+    }
+    const alreadyTracked = narrationDuckRestoreState.some((item) => item.audioEl === audioEl);
+    if (!alreadyTracked) {
+      narrationDuckRestoreState.push({
+        audioEl,
+        volume: audioEl.volume,
+        muted: audioEl.muted
+      });
+    }
+    const target = Math.min(baseVolume * AUDIO.narrationDuckFactor, AUDIO.narrationDuckCap);
+    audioEl.volume = target;
+    // Some mobile browsers ignore volume writes; fall back to mute for that track.
+    if (Math.abs(audioEl.volume - target) > 0.001) {
+      audioEl.muted = true;
+    }
+  };
 
-  // Some mobile browsers ignore media volume changes; if readback does not match, fallback to mute.
-  if (Math.abs(backgroundAudio.volume - target) > 0.001) {
-    backgroundAudio.muted = true;
-    narrationDuckMuteFallbackActive = true;
-  } else if (narrationDuckMuteFallbackActive) {
-    backgroundAudio.muted = false;
-    narrationDuckMuteFallbackActive = false;
-  }
+  duckTrack(backgroundAudio, getMissionBackgroundBaseVolume());
+  duckTrack(startupAudio, AUDIO.startup);
 }
 
 function syncBackgroundVolumeFromConfig() {
@@ -273,10 +280,11 @@ function duckBackgroundForNarration() {
 
 function restoreBackgroundAfterNarration() {
   missionNarrationDuckActive = false;
-  if (narrationDuckMuteFallbackActive) {
-    backgroundAudio.muted = false;
-    narrationDuckMuteFallbackActive = false;
+  for (const item of narrationDuckRestoreState) {
+    item.audioEl.muted = item.muted;
+    item.audioEl.volume = item.volume;
   }
+  narrationDuckRestoreState = [];
   syncBackgroundVolumeFromConfig();
 }
 
@@ -749,7 +757,7 @@ function speakMessage(text) {
 
 function stopMediaAudio() {
   missionNarrationDuckActive = false;
-  narrationDuckMuteFallbackActive = false;
+  narrationDuckRestoreState = [];
   backgroundAudio.muted = false;
   destructionAudio.pause();
   destructionAudio.currentTime = 0;
