@@ -12,6 +12,7 @@ except ImportError:
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 PROFILES_DIR = ROOT / "profiles"
+DEFAULT_NARRATION_VOICE = "en-US-ChristopherNeural"
 
 
 def parse_string_value(profile: dict, key: str, default: str) -> str:
@@ -145,7 +146,8 @@ def main():
 
     for profile_path, profile in load_profiles():
         text = build_message(profile)
-        voice = parse_string_value(profile, "narrationVoice", "en-US-ChristopherNeural")
+        # Keep one consistent voice across all profiles.
+        voice = DEFAULT_NARRATION_VOICE
         rate = parse_string_value(profile, "narrationRate", "-5%")
         output_path = get_output_path(profile_path, profile)
         asyncio.run(generate_mp3(text, voice=voice, rate=rate, output_path=output_path))
