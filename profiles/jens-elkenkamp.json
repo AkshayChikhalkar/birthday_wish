@@ -1,0 +1,30 @@
+{
+  "recipientName": "Jens Elkenkamp",
+  "agentName": "Jens",
+  "recipientDob": "09-04-1972",
+  "profilePhoto": "./assets/profile/profile-jens-elkenkamp.jpg",
+  "clearanceLevel": "OMEGA-7",
+  "agentStatus": "ACTIVE",
+  "agentAddress": "CLASSIFIED",
+  "lastSeen": "Near cake storage, 22:14 IST",
+  "speciality": "SOCIAL OPS / JOY ENGINEERING",
+  "favoriteIntel": "Double chocolate, low evidence",
+  "greeting": "Good evening",
+  "introLine": "Your next assignment has been delivered with full birthday-level priority.",
+  "yearLinePrefix": "As of this moment, you are officially entering Year",
+  "objectivesHeading": "Mission objectives:",
+  "objectives": [
+    "Celebrate without hesitation.",
+    "Accept cake, compliments, hugs, and unreasonable happiness.",
+    "Upgrade confidence, joy, and legendary energy."
+  ],
+  "acceptanceLine": "If you choose to accept this mission, your {ageOrdinal} year will be your boldest one yet.",
+  "selfDestructLineTemplate": "This message will self-destruct in {seconds} seconds.",
+  "countdownSeconds": 12,
+  "countdownBeepFromSeconds": 10,
+  "messageStartDelayMs": 2500,
+  "narrationFile": "./assets/narration/narration-jens-elkenkamp.mp3",
+  "narrationVoice": "en-US-ChristopherNeural",
+  "narrationRate": "-5%",
+  "closingLine": "Good luck, Agent."
+}
