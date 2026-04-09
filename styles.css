@@ -1322,7 +1322,7 @@ hr {
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 9;
+  z-index: 5;
   margin: 0;
   padding: 10px 16px 14px;
   text-align: center;
@@ -1355,12 +1355,33 @@ hr {
     --footer-space: 46px;
   }
 
+  .terminal {
+    height: calc(100dvh - 26px - var(--footer-space));
+  }
+
+  .terminal-body {
+    padding: 14px;
+  }
+
   .controls {
     grid-template-columns: 1fr;
+    margin-top: 10px;
+    gap: 8px;
+  }
+
+  .controls label,
+  .controls input {
+    display: none;
+  }
+
+  .controls button {
+    grid-column: 1 / -1;
   }
 
   .mission-text {
     min-height: 0;
+    font-size: 16px;
+    line-height: 1.45;
   }
 
   .profile-main {
@@ -1378,6 +1399,7 @@ hr {
 
   .profile-card {
     width: 100%;
+    margin-bottom: 8px;
   }
 
   .site-footer {
