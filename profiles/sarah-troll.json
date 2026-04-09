@@ -16,8 +16,8 @@
     { "label": "Name", "key": "name" },
     { "label": "Date of Birth", "key": "dob" },
     { "label": "Age", "key": "age" },
-    { "label": "Height", "value": "Ifel tower height" },
-    { "label": "Weight", "value": "50 kg" },
+    { "label": "Height", "value": "Stealth mode compact" },
+    { "label": "Weight", "value": "Featherlight, high impact" },
     { "label": "Hair Color", "value": "Golden/Blond" },
     { "label": "Eye Color", "value": "Olived Green" },
     { "label": "Birthday Rank", "key": "birthdayRank" },
@@ -37,12 +37,11 @@
     "ACCESS DENIED. Dessert access suspended until better password choices.",
     "ACCESS DENIED. Serious mode not found."
   ],
-  "celebrationTitles": [
-    "License to Party: Granted",
-    "Operation Trolli Thunder",
-    "Mission Complete: Chaos and Cake",
-    "Happy Birthday"
-  ],
+  "celebrationTitles":
+    // "License to Party: Granted",
+    // "Operation Trolli Thunder",
+    // "Mission Complete: Chaos and Cake",
+    "Happy Birthday",
   "preMissionDiagnostics": [
     "> checking dance floor integrity...",
     "> locating nearest dessert extraction route...",
@@ -60,7 +59,7 @@
   "acceptanceLine": "If you choose to accept this mission, your {ageOrdinal} year will be your boldest one yet.",
   "selfDestructLineTemplate": "This message will self-destruct in {seconds} seconds.",
   "countdownSeconds": 5,
-  "countdownBeepFromSeconds": 10,
+  "countdownBeepFromSeconds": 5,
   "messageStartDelayMs": 2500,
   "narrationFile": "./assets/narration/narration-sarah-troll.mp3",
   "narrationVoice": "en-US-ChristopherNeural",
