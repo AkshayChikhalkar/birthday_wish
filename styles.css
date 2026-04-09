@@ -1364,7 +1364,19 @@ hr {
   }
 
   .controls {
+    display: grid;
+    grid-template-columns: 1fr;
+    margin-top: 10px;
+    gap: 8px;
+  }
+
+  .controls label,
+  .controls input {
     display: none;
+  }
+
+  .controls button {
+    grid-column: 1 / -1;
   }
 
   .mission-text {

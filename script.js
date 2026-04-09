@@ -1772,7 +1772,9 @@ async function runMission() {
   startCountdown(COUNTDOWN_SECONDS);
 }
 
-replayBtn.addEventListener("click", showCelebrationScreen);
+replayBtn.addEventListener("click", (event) => {
+  event.preventDefault();
+});
 authBtnEl.addEventListener("click", runAuthSequence);
 profileContinueBtnEl.addEventListener("click", openMissionTerminal);
 addButtonMicroAudio(authBtnEl);
