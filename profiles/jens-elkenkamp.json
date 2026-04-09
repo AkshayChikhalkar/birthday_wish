@@ -16,6 +16,10 @@
     { "label": "Name", "key": "name" },
     { "label": "Date of Birth", "key": "dob" },
     { "label": "Age", "key": "age" },
+    { "label": "Height", "value": "Tower-class presence" },
+    { "label": "Weight", "value": "Classified heavy hitter" },
+    { "label": "Hair Color", "value": "Battle-tested Silver" },
+    { "label": "Eye Color", "value": "Intel Blue" },
     { "label": "Birthday Rank", "key": "birthdayRank" },
     { "label": "Lie Detector", "value": "\"I will only eat one slice\" -> FALSE"},
     { "label": "Address", "key": "address" },
@@ -23,6 +27,9 @@
     { "label": "Speciality", "key": "speciality" },
     { "label": "Clearance", "key": "clearance" },
     { "label": "Status", "key": "status" },
+    { "label": "Intelligence Level", "value": "Ultra, Pro, Max, ++" },
+    { "label": "Fitness Level", "value": "Ultimate+" },
+    { "label": "Energy Level", "value": "200%" },
     { "label": "Favorite Intel", "key": "favoriteIntel" }
   ],
   "authDeniedMessages": [

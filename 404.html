@@ -3,110 +3,34 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mission Birthday Briefing</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@400;600;700&family=Share+Tech+Mono&family=Special+Elite&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="./styles.css" />
+    <title>Redirecting...</title>
+    <script>
+      (function redirectToIndex() {
+        var path = window.location.pathname || "/";
+        var search = window.location.search || "";
+        var hash = window.location.hash || "";
+
+        // Support root hosting and common GitHub Pages-style subpath hosting.
+        var segments = path.split("/").filter(Boolean);
+        var knownAppFolder = "birthday_wish";
+        var knownFolderIndex = segments.indexOf(knownAppFolder);
+        var basePath = knownFolderIndex >= 0 ? "/" + segments.slice(0, knownFolderIndex + 1).join("/") + "/" : "/";
+        var indexPath = basePath + "index.html";
+        var targetUrl = window.location.origin + indexPath + search + hash;
+
+        if (window.location.pathname !== indexPath) {
+          window.location.replace(targetUrl);
+        }
+      })();
+    </script>
   </head>
   <body>
-    <div class="scanlines" aria-hidden="true"></div>
-    <div class="noise" aria-hidden="true"></div>
-    <canvas id="smokeCanvas" aria-hidden="true"></canvas>
-
-    <section class="auth-screen" id="authScreen">
-      <div class="auth-card">
-        <p class="auth-tag">IMF IDENTITY VERIFICATION</p>
-        <h2>Secure Access Required</h2>
-        <label for="authAgentInput">Agent Name</label>
-        <input id="authAgentInput" type="text" readonly />
-        <label for="authPasswordInput">Access Password</label>
-        <input id="authPasswordInput" type="password" placeholder="Enter password" />
-        <button id="authBtn">AUTHENTICATE</button>
-        <div class="auth-progress" id="authProgress">
-          <span id="authProgressFill"></span>
-        </div>
-        <p class="auth-status" id="authStatus">AWAITING CREDENTIALS...</p>
-      </div>
-    </section>
-    <section class="profile-screen hidden" id="profileScreen">
-      <div class="profile-card" id="profileCard">
-        <div class="profile-header">
-          <p class="profile-tag">AUTHENTICATED AGENT PROFILE</p>
-          <p class="profile-classified">CLASSIFIED DOSSIER // LEVEL <span id="profileClassifiedLevel">OMEGA-7</span></p>
-        </div>
-        <div class="profile-main">
-          <img id="profilePhoto" alt="Agent profile photo" />
-          <div class="profile-grid">
-            <p><span>Agent Alias</span><strong id="profileAgentAlias">--</strong></p>
-            <p><span>Name</span><strong id="profileName">--</strong></p>
-            <p><span>Date of Birth</span><strong id="profileDob">--</strong></p>
-            <p><span>Age</span><strong id="profileAge">--</strong></p>
-            <p><span>Address</span><strong id="profileAddress">UNKNOWN</strong></p>
-            <p><span>Last Seen</span><strong id="profileLastSeen">CLASSIFIED</strong></p>
-            <p><span>Speciality</span><strong id="profileSpeciality">SOCIAL OPS</strong></p>
-            <p><span>Clearance</span><strong id="profileClearance">OMEGA-7</strong></p>
-            <p><span>Status</span><strong id="profileStatus">ACTIVE</strong></p>
-            <p><span>Favorite Intel</span><strong id="profileFavoriteIntel">CAKE ACQUISITION</strong></p>
-          </div>
-        </div>
-        <button id="profileContinueBtn">PROCEED TO MISSION BRIEFING</button>
-      </div>
-    </section>
-
-    <main class="app pre-auth">
-      <section class="terminal" id="terminal">
-        <header class="terminal-header">
-          <span class="dot red"></span>
-          <span class="dot amber"></span>
-          <span class="dot green"></span>
-          <h1>IMF COMMUNICATION TERMINAL</h1>
-        </header>
-
-        <div class="terminal-body" id="terminalBody">
-          <p class="meta">
-            ENCRYPTION: OMEGA-7 | CLASSIFICATION:
-            <span class="classified">TOP SECRET // EYES ONLY</span> | PRIORITY: MAXIMUM
-          </p>
-          <p class="meta">RECIPIENT: AGENT <span id="agentName">--</span></p>
-          <p class="meta">STATUS: SECURE LINK ESTABLISHED</p>
-          <hr />
-
-          <pre id="missionText" class="mission-text"></pre>
-
-          <div class="controls">
-            <label for="nameInput">Recipient Name</label>
-            <input id="nameInput" type="text" placeholder="Enter name" maxlength="20" readonly />
-            <label for="ageInput">New Age</label>
-            <input id="ageInput" type="text" placeholder="27" inputmode="numeric" readonly />
-            <button id="replayBtn">ACCEPT MISSION</button>
-          </div>
-
-          <div class="status-row">
-            <p class="countdown hidden" id="countdown"></p>
-            <p class="final hidden" id="finalText">THIS MESSAGE HAS SELF-DESTRUCTED</p>
-          </div>
-        </div>
-      </section>
-    </main>
-    <section class="celebration" id="celebrationScreen">
-      <canvas id="confettiCanvas" aria-hidden="true"></canvas>
-      <div class="celebration-card">
-        <p class="celebration-tag">MISSION ACCEPTED</p>
-        <h2 id="celebrationTitle">Happy Birthday!</h2>
-        <p id="celebrationSubtext">Wishing you an incredible year ahead.</p>
-      </div>
-    </section>
-
-    <footer class="site-footer">
+    <p>Redirecting to the main app...</p>
+    <noscript>
       <p>
-        © 2026 Akshay Chikhalkar | <a href="https://akshay.chikhalkar.com" target="_blank" rel="noopener noreferrer">akshay.chikhalkar.com</a>
+        JavaScript is required. Open
+        <a href="./index.html">index.html</a>.
       </p>
-    </footer>
-
-    <script src="./script.js"></script>
+    </noscript>
   </body>
 </html>
