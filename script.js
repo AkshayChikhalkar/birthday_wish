@@ -508,12 +508,6 @@ function buildMessage(name, age, agentAlias) {
           "Accept cake, compliments, and unreasonable happiness.",
           "Upgrade confidence, joy, and legendary energy."
         ];
-  const sideObjectivePool = [
-    "Protect cake at all costs.",
-    "Avoid suspicious relatives asking about marriage/career.",
-    "Dance like CCTV is offline."
-  ];
-  const sideObjective = sideObjectivePool[Math.floor(Math.random() * sideObjectivePool.length)];
   const acceptanceTemplate =
     config.acceptanceLine ||
     "If you choose to accept this mission, your {ageOrdinal} year will be your boldest one yet.";
@@ -533,7 +527,6 @@ function buildMessage(name, age, agentAlias) {
     "",
     objectivesHeading,
     ...objectives.map((objective) => `- ${objective}`),
-    `- ${sideObjective}`,
     "",
     acceptanceLine,
     "",
