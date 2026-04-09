@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
+      - "**"
     paths:
       - "profiles/*.json"
       - "scripts/generate_narration.py"
