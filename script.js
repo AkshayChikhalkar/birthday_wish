@@ -14,6 +14,7 @@ const authProgressFillEl = document.getElementById("authProgressFill");
 const profileScreenEl = document.getElementById("profileScreen");
 const profileCardEl = document.getElementById("profileCard");
 const profilePhotoEl = document.getElementById("profilePhoto");
+const profilePhotoTipEl = document.getElementById("profilePhotoTip");
 const profileGridEl = document.getElementById("profileGrid");
 const profileClassifiedLevelEl = document.getElementById("profileClassifiedLevel");
 const classifiedModalEl = document.getElementById("classifiedModal");
@@ -26,6 +27,7 @@ const finalTextEl = document.getElementById("finalText");
 const terminal = document.getElementById("terminal");
 const agentNameEl = document.getElementById("agentName");
 const terminalAgentCodeEl = document.getElementById("terminalAgentCode");
+const missionTimestampEl = document.getElementById("missionTimestamp");
 const appEl = document.querySelector(".app");
 const celebrationScreenEl = document.getElementById("celebrationScreen");
 const celebrationTitleEl = document.getElementById("celebrationTitle");
@@ -678,6 +680,12 @@ function setupProfileData() {
   };
   profilePhotoEl.src = photoPath;
   bindProfilePhotoEasterEgg();
+  if (profilePhotoTipEl) {
+    profilePhotoTipEl.classList.remove("visible");
+    setTimeout(() => {
+      profilePhotoTipEl.classList.add("visible");
+    }, 2200);
+  }
 }
 
 function buildLegacyProfileFields() {
@@ -1226,6 +1234,38 @@ function playTone(type, start, duration, frequency, volume = 0.12) {
   osc.stop(audioCtx.currentTime + start + duration + 0.04);
 }
 
+function playUiBeep(kind = "hover") {
+  if (kind === "click") {
+    playTone("triangle", 0, 0.035, 870, 0.02);
+    playTone("sine", 0.035, 0.03, 1120, 0.016);
+    return;
+  }
+  playTone("sine", 0, 0.02, 980, 0.01);
+}
+
+function addButtonMicroAudio(buttonEl) {
+  if (!buttonEl) {
+    return;
+  }
+  buttonEl.addEventListener("pointerenter", () => playUiBeep("hover"));
+  buttonEl.addEventListener("focus", () => playUiBeep("hover"));
+  buttonEl.addEventListener("click", () => playUiBeep("click"));
+}
+
+function getLocalTimeHms(date = new Date()) {
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  const ss = String(date.getSeconds()).padStart(2, "0");
+  return `${hh}:${mm}:${ss}`;
+}
+
+function refreshMissionTimestamp() {
+  if (!missionTimestampEl) {
+    return;
+  }
+  missionTimestampEl.textContent = getLocalTimeHms();
+}
+
 function playAcceptSequence() {
   playTone("square", 0, 0.14, 740, 0.08);
   playTone("square", 0, 0.14, 880, 0.08);
@@ -1535,6 +1575,10 @@ async function runMission() {
 replayBtn.addEventListener("click", showCelebrationScreen);
 authBtnEl.addEventListener("click", runAuthSequence);
 profileContinueBtnEl.addEventListener("click", openMissionTerminal);
+addButtonMicroAudio(authBtnEl);
+addButtonMicroAudio(profileContinueBtnEl);
+refreshMissionTimestamp();
+window.setInterval(refreshMissionTimestamp, 1000);
 classifiedModalCloseBtnEl?.addEventListener("click", closeClassifiedModal);
 classifiedModalEl?.addEventListener("click", (event) => {
   if (event.target === classifiedModalEl) {

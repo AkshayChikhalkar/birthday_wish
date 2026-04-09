@@ -313,12 +313,33 @@ button {
   align-items: start;
 }
 
+.profile-photo-wrap {
+  display: grid;
+  gap: 8px;
+}
+
 #profilePhoto {
   width: 100%;
   aspect-ratio: 3 / 4;
   object-fit: cover;
   border-radius: 10px;
   border: 1px solid #35506a;
+}
+
+.profile-photo-tip {
+  margin: 0;
+  font-size: 11px;
+  color: #ffb27a;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+
+.profile-photo-tip.visible {
+  opacity: 0.92;
+  transform: translateY(0);
 }
 
 .profile-grid {

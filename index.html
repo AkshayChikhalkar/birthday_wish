@@ -66,7 +66,10 @@
           <p class="profile-classified">CLASSIFIED DOSSIER // LEVEL <span id="profileClassifiedLevel">OMEGA-7</span></p>
         </div>
         <div class="profile-main">
-          <img id="profilePhoto" alt="Agent profile photo" />
+          <div class="profile-photo-wrap">
+            <img id="profilePhoto" alt="Agent profile photo" />
+            <p class="profile-photo-tip" id="profilePhotoTip">Tip: double-click photo for classified file</p>
+          </div>
           <div class="profile-grid" id="profileGrid"></div>
         </div>
         <button id="profileContinueBtn">PROCEED TO MISSION BRIEFING</button>
@@ -89,6 +92,7 @@
           </p>
           <p class="meta">RECIPIENT: AGENT <span id="agentName">--</span></p>
           <p class="meta">STATUS: SECURE LINK ESTABLISHED // CODE <span id="terminalAgentCode">--</span></p>
+          <p class="meta">BRIEFED AT: <span id="missionTimestamp">--:--:--</span></p>
           <hr />
 
           <pre id="missionText" class="mission-text"></pre>
