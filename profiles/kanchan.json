@@ -6,10 +6,10 @@
   "clearanceLevel": "OMEGA-7",
   "agentStatus": "ACTIVE",
   "agentCode": "KI-023",
-  "agentAddress": "CLASSIFIED",
+  "agentAddress": "UNKNOWN // SAFEHOUSE REDACTED",
   "lastSeen": "Near cake storage, 22:14 IST",
-  "speciality": "Kicking Asses",
-  "favoriteIntel": "Killing Enemies with Cake",
+  "speciality": "SOCIAL OPS / JOY ENGINEERING",
+  "favoriteIntel": "Double chocolate, low evidence",
   "profileFields": [
     { "label": "Agent Alias", "key": "agentAlias" },
     { "label": "Agent Code", "key": "agentCode" },
@@ -18,8 +18,8 @@
     { "label": "Age", "key": "age" },
     { "label": "Height", "value": "Stealth mode compact" },
     { "label": "Weight", "value": "Featherlight, high impact" },
-    { "label": "Hair Color", "value": "Golden/Blond" },
-    { "label": "Eye Color", "value": "Olived Green" },
+    { "label": "Hair Color", "value": "Midnight Black" },
+    { "label": "Eye Color", "value": "Spark Brown" },
     { "label": "Birthday Rank", "key": "birthdayRank" },
     { "label": "Lie Detector", "value": "\"I will only eat one slice\" -> FALSE"},
     { "label": "Address", "key": "address" },
@@ -33,26 +33,28 @@
     { "label": "Favorite Intel", "key": "favoriteIntel" }
   ],
   "authDeniedMessages": [
-    "ACCESS DENIED. Agent {agentName}! KI-023, that guess was cute.",
-    "ACCESS DENIED. Dessert access suspended until better password choices.",
-    "ACCESS DENIED. Serious mode not found."
+    "ACCESS DENIED. Nice try, Agent {agentName}.",
+    "ACCESS DENIED. The cake laughed at that password.",
+    "ACCESS DENIED. Please reattempt with birthday confidence."
   ],
-  "celebrationTitles":[
-    "Happy Birthday"
+  "celebrationTitles": [
+    "Operation Smile Surge",
+    "Mission Accomplished, Agent Kanchan",
+    "Confetti Command: Enabled"
   ],
   "preMissionDiagnostics": [
-    "> checking dance floor integrity...",
-    "> locating nearest dessert extraction route...",
-    "> warning: fun levels approaching illegal..."
+    "> deploying smiles across all sectors...",
+    "> neutralizing sadness with dance protocol...",
+    "> loading maximum birthday energy..."
   ],
   "greeting": "Good evening",
-"introLine": "Attention Agent: birthday protocol engaged. Serious behavior is no longer authorized.",
-"yearLinePrefix": "As of this moment, you are officially entering Year",
+  "introLine": "Your next assignment has been delivered with full birthday-level priority.",
+  "yearLinePrefix": "As of this moment, you are officially entering Year",
   "objectivesHeading": "Mission objectives:",
   "objectives": [
-  "Accept every compliment like a trained professional.",
-  "Infiltrate the party, extract dessert, leave no crumbs.",
-  "Upgrade happiness to levels that concern your enemies."
+  "Deploy smiles across all friendly zones.",
+  "Neutralize sadness using cake and dance moves.",
+  "Return home with top-secret levels of happiness."
   ],
   "acceptanceLine": "If you choose to accept this mission, your {ageOrdinal} year will be your boldest one yet.",
   "selfDestructLineTemplate": "This message will self-destruct in {seconds} seconds.",
