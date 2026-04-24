@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import asyncio
 
 try:
     import edge_tts
@@ -124,12 +125,39 @@ def build_message(profile: dict) -> str:
     return " ".join(lines)
 
 
+async def save_with_retry(
+    text: str,
+    voice: str,
+    rate: str,
+    raw_output_path: pathlib.Path,
+    max_attempts: int = 5,
+):
+    last_error: Exception | None = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            communicator = edge_tts.Communicate(text=text, voice=voice, rate=rate)
+            await communicator.save(str(raw_output_path))
+            return
+        except Exception as err:
+            last_error = err
+            if attempt >= max_attempts:
+                break
+            # Azure/edge TTS endpoints can return brief 5xx spikes; retry with backoff.
+            sleep_seconds = 2 ** (attempt - 1)
+            print(
+                f"TTS generation attempt {attempt}/{max_attempts} failed: {err}. "
+                f"Retrying in {sleep_seconds}s..."
+            )
+            await asyncio.sleep(sleep_seconds)
+    if last_error is not None:
+        raise last_error
+
+
 async def generate_mp3(text: str, voice: str, rate: str, output_path: pathlib.Path):
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory() as tmp_dir:
         raw_output_path = pathlib.Path(tmp_dir) / "narration-raw.mp3"
-        communicator = edge_tts.Communicate(text=text, voice=voice, rate=rate)
-        await communicator.save(str(raw_output_path))
+        await save_with_retry(text=text, voice=voice, rate=rate, raw_output_path=raw_output_path)
         master_narration_audio(raw_output_path, output_path)
 
 
@@ -184,8 +212,6 @@ def load_profiles() -> list[tuple[pathlib.Path, dict]]:
 
 
 def main():
-    import asyncio
-
     for profile_path, profile in load_profiles():
         text = build_message(profile)
         # Keep one consistent voice across all profiles.
