@@ -1,0 +1,68 @@
+{
+  "recipientName": "Manjiree Ghate",
+  "agentName": "Myauuuooo",
+  "recipientDob": "15-06-2004",
+  "profilePhoto": "./assets/profile/profile-manjiree.jpg",
+  "clearanceLevel": "OMEGA-MEOW",
+  "agentStatus": "ACTIVE (NAPPING)",
+  "agentCode": "MG-1506",
+  "agentAddress": "TOP SECRET // UNDER THE BED / ON THE KEYBOARD",
+  "lastSeen": "Sitting on important documents, 15:06 IST",
+  "speciality": "STEALTH MEOW OPS / CAKE SURVEILLANCE",
+  "favoriteIntel": "Red velvet, eaten with zero remorse",
+  "profileFields": [
+    { "label": "Agent Alias", "key": "agentAlias" },
+    { "label": "Agent Code", "key": "agentCode" },
+    { "label": "Name", "key": "name" },
+    { "label": "Date of Birth", "key": "dob" },
+    { "label": "Age", "key": "age" },
+    { "label": "Height", "value": "5'2\" of concentrated chaos" },
+    { "label": "Weight", "value": "Featherlight until snacks appear" },
+    { "label": "Hair Color", "value": "Tactical Brown (fluff optional)" },
+    { "label": "Eye Color", "value": "Judgmental Brown — sees everything" },
+    { "label": "Birthday Rank", "key": "birthdayRank" },
+    { "label": "Lie Detector", "value": "\"I am definitely not a cat\" -> FALSE" },
+    { "label": "Address", "key": "address" },
+    { "label": "Last Seen", "key": "lastSeen" },
+    { "label": "Speciality", "key": "speciality" },
+    { "label": "Clearance", "key": "clearance" },
+    { "label": "Status", "key": "status" },
+    { "label": "Intelligence Level", "value": "Genius. But only when cake is involved." },
+    { "label": "Fitness Level", "value": "Sprint-to-snack certified" },
+    { "label": "Energy Level", "value": "200% meow, 400% after sugar" },
+    { "label": "Favorite Intel", "key": "favoriteIntel" }
+  ],
+  "authDeniedMessages": [
+    "ACCESS DENIED. Agent Myauuuooo, that password had zero meow factor.",
+    "ACCESS DENIED. The birthday cake hissed at your attempt.",
+    "ACCESS DENIED. Whiskers not aligned. Try again, furball."
+  ],
+  "celebrationTitles": [
+    "Operation: Purr Protocol",
+    "Mission Accomplished, Agent Myauuuooo",
+    "CLASSIFIED: One More Year of Chaos"
+  ],
+  "preMissionDiagnostics": [
+    "> calibrating meow-to-speech translator...",
+    "> scanning for unattended cake... target acquired",
+    "> warning: cuteness levels exceeding legal limits..."
+  ],
+  "greeting": "Good evening",
+  "introLine": "Attention Agent Myauuuooo: birthday protocol engaged. Serious behavior has been permanently replaced with cake.",
+  "yearLinePrefix": "As of this moment, you are officially entering Year",
+  "objectivesHeading": "Mission objectives:",
+  "objectives": [
+    "Infiltrate the party. Judge every cake slice like a food critic with a license.",
+    "Deploy strategic meows at socially inappropriate volume.",
+    "Accept compliments, cake, and chaos — you earned all three."
+  ],
+  "acceptanceLine": "If you choose to accept this mission, your {ageOrdinal} year will be your most legendary meow yet.",
+  "selfDestructLineTemplate": "This message will self-destruct in {seconds} seconds. (The cake will not.)",
+  "countdownSeconds": 5,
+  "countdownBeepFromSeconds": 5,
+  "messageStartDelayMs": 2500,
+  "narrationFile": "./assets/narration/narration-manjiree.mp3",
+  "narrationVoice": "en-US-ChristopherNeural",
+  "narrationRate": "-5%",
+  "closingLine": "Good luck, Agent. Myauuuooo out."
+}
