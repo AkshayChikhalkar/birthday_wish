@@ -1,0 +1,66 @@
+{
+  "recipientName": "Miriam Romahn",
+  "agentName": "Mips",
+  "recipientDob": "30-05-1997",
+  "profilePhoto": "./assets/profile/profile-miriam.jpg",
+  "clearanceLevel": "OMEGA-7",
+  "agentStatus": "ACTIVE",
+  "agentCode": "Mipsi-909",
+  "agentAddress": "UNKNOWN // SAFEHOUSE REDACTED",
+  "lastSeen": "Near cake storage, 22:14 IST",
+  "speciality": "CAT PERSON / JOY WOODWORKING",
+  "favoriteIntel": "Double chocolate, low evidence",
+  "profileFields": [
+    { "label": "Agent Alias", "key": "agentAlias" },
+    { "label": "Agent Code", "key": "agentCode" },
+    { "label": "Name", "key": "name" },
+    { "label": "Date of Birth", "key": "dob" },
+    { "label": "Age", "key": "age" },
+    { "label": "Height", "value": "Stealth mode compact" },
+    { "label": "Weight", "value": "Featherlight, high impact" },
+    { "label": "Hair Color", "value": "Strawberry Blonde" },
+    { "label": "Eye Color", "value": "Olive Green" },
+    { "label": "Birthday Rank", "key": "birthdayRank" },
+    { "label": "Lie Detector", "value": "\"I will only eat one slice\" -> FALSE"},
+    { "label": "Address", "key": "address" },
+    { "label": "Last Seen", "key": "lastSeen" },
+    { "label": "Speciality", "key": "speciality" },
+    { "label": "Clearance", "key": "clearance" },
+    { "label": "Status", "key": "status" },
+    { "label": "Intelligence Level", "value": "Ultra, Pro, Max, ++" },
+    { "label": "Fitness Level", "value": "Ultimate+" },
+    { "label": "Energy Level", "value": "200%" },
+    { "label": "Favorite Intel", "key": "favoriteIntel" }
+  ],
+  "authDeniedMessages": [
+    "ACCESS DENIED. Nice try, Agent {agentName}.",
+    "ACCESS DENIED. The cake laughed at that password.",
+    "ACCESS DENIED. Please reattempt with birthday confidence."
+  ],
+  "celebrationTitles": [
+    "Happy Birthday"
+  ],
+  "preMissionDiagnostics": [
+    "> deploying smiles across all sectors...",
+    ">  ...",
+    "> loading maximum birthday energy..."
+  ],
+  "greeting": "Good evening",
+  "introLine": "Your next assignment has been delivered with full birthday-level priority.",
+  "yearLinePrefix": "As of this moment, you are officially entering Year",
+  "objectivesHeading": "Mission objectives:",
+  "objectives": [
+  "Deploy smiles across all friendly zones.",
+  "Neutralize sadness using cake and dance moves.",
+  "Return home with top-secret levels of happiness."
+  ],
+  "acceptanceLine": "If you choose to accept this mission, your {ageOrdinal} year will be your boldest one yet.",
+  "selfDestructLineTemplate": "This message will self-destruct in {seconds} seconds.",
+  "countdownSeconds": 5,
+  "countdownBeepFromSeconds": 5,
+  "messageStartDelayMs": 2500,
+  "narrationFile": "./assets/narration/narration-miriam.mp3",
+  "narrationVoice": "en-US-ChristopherNeural",
+  "narrationRate": "-5%",
+  "closingLine": "Good luck, Agent."
+}
