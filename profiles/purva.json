@@ -1,0 +1,68 @@
+{
+  "recipientName": "Purva Singru",
+  "agentName": "Zingru",
+  "recipientDob": "24-06-1996",
+  "profilePhoto": "./assets/profile/profile-purva.jpg",
+  "clearanceLevel": "OMEGA-ZING",
+  "agentStatus": "ACTIVE (MAIN CHARACTER ENERGY)",
+  "agentCode": "PS-2406",
+  "agentAddress": "CLASSIFIED // PROBABLY WHERE THE PARTY IS",
+  "lastSeen": "Arriving fashionably on time (lies), 24:06 IST",
+  "speciality": "JOY WARFARE / SPONTANEOUS DANCE DEPLOYMENT",
+  "favoriteIntel": "Triple-layer chocolate, maximum zing",
+  "profileFields": [
+    { "label": "Agent Alias", "key": "agentAlias" },
+    { "label": "Agent Code", "key": "agentCode" },
+    { "label": "Name", "key": "name" },
+    { "label": "Date of Birth", "key": "dob" },
+    { "label": "Age", "key": "age" },
+    { "label": "Height", "value": "Tall enough to reach the top shelf cake" },
+    { "label": "Weight", "value": "Light as confetti, hits like a headline" },
+    { "label": "Hair Color", "value": "Radiant Black with plot-twist shine" },
+    { "label": "Eye Color", "value": "Sparkle Brown — weaponized charm" },
+    { "label": "Birthday Rank", "key": "birthdayRank" },
+    { "label": "Lie Detector", "value": "\"I will leave early tonight\" -> FALSE" },
+    { "label": "Address", "key": "address" },
+    { "label": "Last Seen", "key": "lastSeen" },
+    { "label": "Speciality", "key": "speciality" },
+    { "label": "Clearance", "key": "clearance" },
+    { "label": "Status", "key": "status" },
+    { "label": "Intelligence Level", "value": "Off the charts. Also off the seating plan." },
+    { "label": "Fitness Level", "value": "Dance-floor endurance: legendary" },
+    { "label": "Energy Level", "value": "Unlimited zing — batteries not included" },
+    { "label": "Favorite Intel", "key": "favoriteIntel" }
+  ],
+  "authDeniedMessages": [
+    "ACCESS DENIED. Agent Zingru, that password had no zing whatsoever.",
+    "ACCESS DENIED. The confetti cannon rejected your credentials.",
+    "ACCESS DENIED. Nice try — but Zingru runs on birthday energy only."
+  ],
+  "celebrationTitles": [
+    "Operation: Maximum Zing",
+    "Mission Accomplished, Agent Zingru",
+    "TOP SECRET: The Party Starts Now"
+  ],
+  "preMissionDiagnostics": [
+    "> charging zing levels to critical...",
+    "> syncing dance moves with cake arrival...",
+    "> warning: charisma output may cause spontaneous applause..."
+  ],
+  "greeting": "Good evening",
+  "introLine": "Attention Agent Zingru: birthday protocol engaged. Low energy has been officially banned from this mission.",
+  "yearLinePrefix": "As of this moment, you are officially entering Year",
+  "objectivesHeading": "Mission objectives:",
+  "objectives": [
+    "Enter the room like the plot twist everyone was waiting for.",
+    "Extract maximum cake, compliments, and dance-floor dominance.",
+    "Upgrade happiness to levels that make your enemies take notes."
+  ],
+  "acceptanceLine": "If you choose to accept this mission, your {ageOrdinal} year will be your zingiest yet.",
+  "selfDestructLineTemplate": "This message will self-destruct in {seconds} seconds. Your spotlight will not.",
+  "countdownSeconds": 5,
+  "countdownBeepFromSeconds": 5,
+  "messageStartDelayMs": 2500,
+  "narrationFile": "./assets/narration/narration-purva.mp3",
+  "narrationVoice": "en-US-ChristopherNeural",
+  "narrationRate": "-5%",
+  "closingLine": "Good luck, Agent. Stay zingy."
+}
