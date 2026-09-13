@@ -63,6 +63,6 @@
   "messageStartDelayMs": 2500,
   "narrationFile": "./assets/narration/narration-pusatkar.mp3",
   "narrationVoice": "en-US-ChristopherNeural",
-  "narrationRate": "0%",
+  "narrationRate": "+5%",
   "closingLine": "Good luck, Agent. Wear the watch."
 }
