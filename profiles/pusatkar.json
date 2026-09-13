@@ -4,12 +4,12 @@
   "recipientDob": "13-09-1995",
   "profilePhoto": "./assets/profile/profile-pusatkar.png",
   "clearanceLevel": "OMEGA-BRO",
-  "agentStatus": "ACTIVE (QUEUEING)",
+  "agentStatus": "ACTIVE (CONTROLLER IN HAND)",
   "agentCode": "AP-1309",
-  "agentAddress": "CLASSIFIED // COUCH / MARRIED HQ / BIND B SITE",
-  "lastSeen": "Two years into marriage, mid-chai, mid-Valorant",
-  "speciality": "VALORANT OPS / CHAI DIPLOMACY",
-  "favoriteIntel": "Chai. Always chai. Ult ready optional.",
+  "agentAddress": "CLASSIFIED // COUCH / MARRIED HQ",
+  "lastSeen": "Over one year into marriage, mid-chai, mid-match",
+  "speciality": "VIDEO GAME OPS / CHAI DIPLOMACY",
+  "favoriteIntel": "Chai. Always chai.",
   "profileFields": [
     { "label": "Agent Alias", "key": "agentAlias" },
     { "label": "Agent Code", "key": "agentCode" },
@@ -17,7 +17,7 @@
     { "label": "Date of Birth", "key": "dob" },
     { "label": "Age", "key": "age" },
     { "label": "Height", "value": "Standard issue. Stomach: growing DLC." },
-    { "label": "Weight", "value": "Couch-optimized. Activity not found." },
+    { "label": "Weight", "value": "Couch-optimized. Gym not found." },
     { "label": "Hair Color", "value": "Shabby Black — father still complaining" },
     { "label": "Eye Color", "value": "Screen-glow Brown" },
     { "label": "Birthday Rank", "key": "birthdayRank" },
@@ -28,41 +28,41 @@
     { "label": "Clearance", "key": "clearance" },
     { "label": "Status", "key": "status" },
     { "label": "Intelligence Level", "value": "High K/D. Low gym attendance." },
-    { "label": "Fitness Level", "value": "Thumb cardio only. \"He's one!\"" },
-    { "label": "Energy Level", "value": "100% for Valorant, 0% for walks" },
+    { "label": "Fitness Level", "value": "Thumb cardio only" },
+    { "label": "Energy Level", "value": "100% for games, 0% for gym" },
     { "label": "Favorite Intel", "key": "favoriteIntel" }
   ],
   "authDeniedMessages": [
-    "ACCESS DENIED. Spike not planted. Password not found.",
-    "ACCESS DENIED. Nice try. Enemy spotted... your guess.",
-    "ACCESS DENIED. Last player standing? Not with that password."
+    "ACCESS DENIED. Wrong password, Agent Pusi. Try chai.",
+    "ACCESS DENIED. That guess had more effort than your hairstyle.",
+    "ACCESS DENIED. Wedding watch still offline. So is this attempt."
   ],
   "celebrationTitles": [
-    "Operation: Clutch Birthday",
+    "Operation: Married & Gaming",
     "Mission Accomplished, Agent Pusi",
-    "CLASSIFIED: Ace the Cake. Comb the Hair."
+    "CLASSIFIED: Please Comb Your Hair"
   ],
   "preMissionDiagnostics": [
-    "> \"Spike planted.\" Cake secured...",
-    "> \"One shot.\" Dad judging haircut...",
-    "> \"Ult ready.\" Chai brewing..."
+    "> brewing emergency chai...",
+    "> locating unused wedding watch...",
+    "> warning: dad still judging the haircut..."
   ],
   "greeting": "Good evening",
-  "introLine": "Attention Agent Pusi: two years married, still queueing Valorant, still no watch. Birthday protocol engaged.",
+  "introLine": "Attention Agent Pusi: over one year married, still gaming, still no watch. Birthday protocol engaged.",
   "yearLinePrefix": "As of this moment, you are officially entering Year",
   "objectivesHeading": "Mission objectives:",
   "objectives": [
-    "Pause the match. Accept cake and chai. \"Nice shot.\"",
+    "Pause the game. Accept cake and chai like a married legend.",
     "Comb the hair once. Make dad proud for 30 seconds.",
-    "Wear the wedding watch. Clutch or kick — we beg."
+    "Wear the wedding watch. Just once. We beg."
   ],
   "acceptanceLine": "If you choose to accept this mission, your {ageOrdinal} year will be your boldest one yet.",
-  "selfDestructLineTemplate": "This message will self-destruct in {seconds} seconds. Your rank will not.",
-  "countdownSeconds": 5,
+  "selfDestructLineTemplate": "This message will self-destruct in {seconds} seconds. Your stomach will not.",
+  "countdownSeconds": 7,
   "countdownBeepFromSeconds": 5,
   "messageStartDelayMs": 2500,
   "narrationFile": "./assets/narration/narration-pusatkar.mp3",
   "narrationVoice": "en-US-ChristopherNeural",
-  "narrationRate": "-5%",
-  "closingLine": "Good luck, Agent. Don't peek. Wear the watch."
+  "narrationRate": "0%",
+  "closingLine": "Good luck, Agent. Wear the watch."
 }
